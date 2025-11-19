@@ -97,14 +97,13 @@ CREATE TABLE PublicKeyword (
     FOREIGN KEY (keywordID) REFERENCES Keyword(keywordID) ON DELETE CASCADE
 );
 
--------------------------
--- Seed data (sample accounts + users + keywords + links)
--------------------------
+
 
 -- Accounts for Professors (role='Professor')
 INSERT INTO Account (username, passwordHash, role) VALUES
   ('prof1', SHA1('Prof1pass'), 'Professor'),
   ('prof2', SHA1('Prof2pass'), 'Professor');
+
 
 -- Accounts for Students (role='Student')
 INSERT INTO Account (username, passwordHash, role) VALUES
@@ -177,5 +176,5 @@ INSERT INTO ProfessorAbstract (professorID, abstractID, authorRole)
 VALUES
  ((SELECT professorID FROM Professor WHERE firstName='Alice' AND lastName='Anderson'), (SELECT abstractID FROM Abstract WHERE title='Deep Learning for Time Series'), 'Author'),
  ((SELECT professorID FROM Professor WHERE firstName='Bob' AND lastName='Brown'), (SELECT abstractID FROM Abstract WHERE title='Secure Systems Design'), 'Author');
-
--- End of seed
+ 
+ SELECt * FROM account;
