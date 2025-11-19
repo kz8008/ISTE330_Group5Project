@@ -230,6 +230,37 @@ public class MainDataLayer {
             return 0;
         }
     }
+    
+    public boolean updateAbstractIfOwned(int professorID, int abstractID, String newTitle, String newText) {
+    String verifySql = "SELECT * FROM ProfessorAbstract WHERE professorID = ? AND abstractID = ?";
+    String updateSql = "UPDATE Abstract SET title = ?, abstractText = ? WHERE abstractID = ?";
+
+    try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
+        verifyStmt.setInt(1, professorID);
+        verifyStmt.setInt(2, abstractID);
+        ResultSet rs = verifyStmt.executeQuery();
+
+        if (!rs.next()) {
+            System.out.println("You do not own this abstract.");
+            return false;
+        }
+    } catch (Exception e) {
+        System.out.println("ERROR verifying abstract ownership.");
+        return false;
+    }
+
+    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+        updateStmt.setString(1, newTitle);
+        updateStmt.setString(2, newText);
+        updateStmt.setInt(3, abstractID);
+
+        return updateStmt.executeUpdate() > 0;
+    } catch (Exception e) {
+        System.out.println("ERROR updating abstract.");
+        return false;
+    }
+}
+
 
     public int deleteAbstract(int abstractID) {
         String sql = "DELETE FROM Abstract WHERE abstractID = ?";
@@ -241,6 +272,34 @@ public class MainDataLayer {
             return 0;
         }
     }
+    
+    public boolean deleteAbstractIfOwned(int professorID, int abstractID) {
+    String verifySql = "SELECT * FROM ProfessorAbstract WHERE professorID = ? AND abstractID = ?";
+
+    try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
+        verifyStmt.setInt(1, professorID);
+        verifyStmt.setInt(2, abstractID);
+        ResultSet rs = verifyStmt.executeQuery();
+
+        if (!rs.next()) {
+            System.out.println("You do not own this abstract.");
+            return false;
+        }
+    } catch (Exception e) {
+        System.out.println("ERROR verifying abstract ownership.");
+        return false;
+    }
+
+    String deleteSql = "DELETE FROM Abstract WHERE abstractID = ?";
+    try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+        deleteStmt.setInt(1, abstractID);
+        return deleteStmt.executeUpdate() > 0;
+    } catch (Exception e) {
+        System.out.println("ERROR deleting abstract.");
+        return false;
+    }
+}
+
 
     public int addProfessorAbstract(int professorID, int abstractID, String authorRole) {
         String sql = "INSERT INTO ProfessorAbstract (professorID, abstractID, authorRole) VALUES (?, ?, ?)";
@@ -383,7 +442,7 @@ public class MainDataLayer {
     }
 
     // ---------------------------
-    // Search students by interest (returns list of formatted strings without ID)
+    // Search students by interest 
     // ---------------------------
     public List<String> searchStudentByInterest(String interest) {
         List<String> results = new ArrayList<>();

@@ -201,26 +201,33 @@ public class PresentationLayer {
                     break;
 
                 case "2":
-                    System.out.print("Abstract ID to update: ");
-                    String upIdS = scanner.nextLine().trim();
-                    System.out.print("New Title: "); String newTitle = scanner.nextLine();
-                    System.out.print("New Text: "); String newText = scanner.nextLine();
-                    try {
-                        int upId = Integer.parseInt(upIdS);
-                        int res = dl.updateAbstract(upId, newTitle, newText);
-                        System.out.println(res > 0 ? "Abstract updated." : "No update performed.");
-                    } catch (NumberFormatException nfe) { System.out.println("Invalid ID."); }
-                    break;
+                      System.out.print("Abstract ID to update: ");
+                      String upIdS = scanner.nextLine().trim();
+                      System.out.print("New Title: "); String newTitle = scanner.nextLine();
+                      System.out.print("New Text: "); String newText = scanner.nextLine();
+                      try {
+                          int upId = Integer.parseInt(upIdS);
+                          boolean res = dl.updateAbstractIfOwned(profId, upId, newTitle, newText);
+                          System.out.println(res ? "Abstract updated." : "Unable to update abstract (not yours or invalid ID).");
+                      } catch (NumberFormatException nfe) { 
+                          System.out.println("Invalid ID."); 
+                      }
+                      break;
 
-                case "3":
-                    System.out.print("Abstract ID to delete: ");
-                    String delIdS = scanner.nextLine().trim();
-                    try {
-                        int delId = Integer.parseInt(delIdS);
-                        int res = dl.deleteAbstract(delId);
-                        System.out.println(res > 0 ? "Abstract deleted." : "No deletion performed.");
-                    } catch (NumberFormatException nfe) { System.out.println("Invalid ID."); }
-                    break;
+
+
+                  case "3":
+                      System.out.print("Abstract ID to delete: ");
+                      String delIdS = scanner.nextLine().trim();
+                      try {
+                          int delId = Integer.parseInt(delIdS);
+                          boolean res = dl.deleteAbstractIfOwned(profId, delId);
+                          System.out.println(res ? "Abstract deleted." : "Unable to delete abstract (not yours or invalid ID).");
+                      } catch (NumberFormatException nfe) { 
+                          System.out.println("Invalid ID."); 
+                      }
+                      break;
+
 
                 case "4":
                     System.out.print("Keyword to add: ");
