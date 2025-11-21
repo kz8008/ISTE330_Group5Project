@@ -11,7 +11,7 @@ public class PresentationLayer {
     private static String currentRole = null;
 
     public static void main(String[] args) {
-        System.out.println("=== Research Collaboration CLI (Group 5) ===");
+        System.out.println("=== Main Menu ===");
 
         if (!dl.connect()) {
             System.out.println("Could not connect to DB. Exiting.");
@@ -36,13 +36,13 @@ public class PresentationLayer {
     // Main Menu
     // 1 Login
     // 2 Register
-    // 3 Exit Program
+    // 3 Exit
     // -------------------------
     private static void showMainMenu() {
         System.out.println("\nMAIN MENU");
         System.out.println("1) Login");
         System.out.println("2) Register");
-        System.out.println("3) Exit Program");
+        System.out.println("3) Exit");
         System.out.print("Enter choice: ");
     }
 
@@ -52,7 +52,7 @@ public class PresentationLayer {
     // 2 Student
     // 3 Public User
     // 4 Back
-    // 5 Exit Program
+    // 5 Exit
     // -------------------------
     private static void registerMenu() {
         while (true) {
@@ -61,7 +61,7 @@ public class PresentationLayer {
             System.out.println("2) Register Student");
             System.out.println("3) Register Public User");
             System.out.println("4) Back");
-            System.out.println("5) Exit Program");
+            System.out.println("5) Exit");
             System.out.print("Enter choice: ");
             String c = scanner.nextLine().trim();
             switch (c) {
@@ -83,17 +83,17 @@ public class PresentationLayer {
         System.out.print("Password: "); String pass = scanner.nextLine().trim();
         int accountId = dl.registerAccount(user, pass, "Professor");
         if (accountId <= 0) { System.out.println("Could not create account."); return; }
-        System.out.println("Account created. AccountID: " + accountId);
+        
 
         System.out.print("First name: "); String fn = scanner.nextLine().trim();
         System.out.print("Last name: "); String ln = scanner.nextLine().trim();
         System.out.print("Building code: "); String b = scanner.nextLine().trim();
         System.out.print("Office number: "); String o = scanner.nextLine().trim();
         System.out.print("Email: "); String e = scanner.nextLine().trim();
-        System.out.print("Phone: "); String ph = scanner.nextLine().trim();
+        System.out.print("Phone(format 555-555-5555): "); String ph = scanner.nextLine().trim();
 
         int res = dl.addProfessor(0, fn, ln, b, o, e, ph, accountId);
-        if (res > 0) System.out.println("Professor created (id/result): " + res);
+        if (res > 0) System.out.println("Professor account created!");
         else System.out.println("Failed to create professor profile.");
     }
 
@@ -103,7 +103,7 @@ public class PresentationLayer {
         System.out.print("Password: "); String pass = scanner.nextLine().trim();
         int accountId = dl.registerAccount(user, pass, "Student");
         if (accountId <= 0) { System.out.println("Could not create account."); return; }
-        System.out.println("Account created. AccountID: " + accountId);
+        
 
         System.out.print("First name: "); String fn = scanner.nextLine().trim();
         System.out.print("Last name: "); String ln = scanner.nextLine().trim();
@@ -112,7 +112,7 @@ public class PresentationLayer {
         System.out.print("Phone: "); String phone = scanner.nextLine().trim();
 
         int sid = dl.addStudent(0, fn, ln, major, email, phone, accountId);
-        if (sid > 0) System.out.println("Student created id: " + sid);
+        if (sid > 0) System.out.println("Student account created! ");
         else System.out.println("Failed to create student profile.");
     }
 
@@ -122,7 +122,7 @@ public class PresentationLayer {
         System.out.print("Password: "); String pass = scanner.nextLine().trim();
         int accountId = dl.registerAccount(user, pass, "Public");
         if (accountId <= 0) { System.out.println("Could not create account."); return; }
-        System.out.println("Account created. AccountID: " + accountId);
+ 
 
         System.out.print("First name: "); String fn = scanner.nextLine().trim();
         System.out.print("Last name: "); String ln = scanner.nextLine().trim();
@@ -130,7 +130,7 @@ public class PresentationLayer {
         System.out.print("Email: "); String email = scanner.nextLine().trim();
 
         int pid = dl.addPublicUser(fn, ln, org, email, accountId);
-        if (pid > 0) System.out.println("Public user created id: " + pid);
+        if (pid > 0) System.out.println("Guest account created! ");
         else System.out.println("Failed to create public profile.");
     }
 
@@ -167,7 +167,7 @@ public class PresentationLayer {
     // 4 Add Keyword
     // 5 Search Students by Interest
     // 6 Back
-    // 7 Exit Program
+    // 7 Exit 
     // -------------------------
     private static void professorMenu() {
         int profId = dl.findProfessorIdByAccountId(currentAccountId);
@@ -183,8 +183,8 @@ public class PresentationLayer {
             System.out.println("3) Delete Abstract");
             System.out.println("4) Add Keyword");
             System.out.println("5) Search Students by Interest");
-            System.out.println("6) Back");
-            System.out.println("7) Exit Program");
+            System.out.println("6) Logout");
+            System.out.println("7) Exit");
             System.out.print("Enter choice: ");
             String c = scanner.nextLine().trim();
 
@@ -271,7 +271,7 @@ public class PresentationLayer {
     // 4 Find Matching Professors
     // 5 Search Faculty by Keyword
     // 6 Back
-    // 7 Exit Program
+    // 7 Exit
     // -------------------------
     private static void studentMenu() {
         int stuId = dl.findStudentIdByAccountId(currentAccountId);
@@ -281,39 +281,39 @@ public class PresentationLayer {
         }
         while (true) {
             System.out.println("\n=== STUDENT MENU ===");
-            System.out.println("1) Add Student Keyword");
-            System.out.println("2) Delete Student Keyword");
-            System.out.println("3) View All Faculty Abstracts");
-            System.out.println("4) Find Matching Professors");
-            System.out.println("5) Search Faculty by Keyword");
-            System.out.println("6) Back");
-            System.out.println("7) Exit Program");
+            System.out.println("1) Add Your Interests");
+            System.out.println("2) Mofify Your Interests");
+            System.out.println("3) View All Professor Abstracts");
+            System.out.println("4) Find Professors By Mutual Interests");
+            System.out.println("5) Search Professors By Interests");
+            System.out.println("6) Logout");
+            System.out.println("7) Exit");
             System.out.print("Enter choice: ");
             String c = scanner.nextLine().trim();
 
             switch (c) {
                 case "1":
-                    System.out.print("Enter topic (1-3 words): ");
+                    System.out.print("Enter an interest (1-3 words): ");
                     String topic = scanner.nextLine().trim().toLowerCase();
                     int kid = dl.ensureKeyword(topic);
                     if (kid > 0) dl.addStudentKeyword(stuId, kid);
-                    System.out.println("Topic added.");
+                    System.out.println("Interest added.");
                     break;
 
                 case "2":
-                      System.out.print("Enter keyword to remove (exact text): ");
+                      System.out.print("Enter interest to remove (exact text): ");
                       String toRemove = scanner.nextLine().trim().toLowerCase();
                       int rid = dl.ensureKeyword(toRemove);
                   
                       if (rid > 0) {
                           try {
                               dl.deleteStudentKeyword(stuId, rid);
-                              System.out.println("Keyword removed from your profile.");
+                              System.out.println("Interest removed from your profile.");
                           } catch (Exception e) {
                               System.out.println("Delete keyword not implemented in data layer.");
                           }
                       } else {
-                          System.out.println("Keyword not found.");
+                          System.out.println("Interest was not found.");
                       }
                       break;
    
@@ -330,7 +330,7 @@ public class PresentationLayer {
                     break;
 
                 case "5":
-                    System.out.print("Enter keyword to search faculty: ");
+                    System.out.print("Enter keyword to search a professor: ");
                     String key = scanner.nextLine().trim();
                     List<String> profs = dl.searchFacultyByKeyword(key);
                     if (profs.isEmpty()) System.out.println("No professors found.");
@@ -350,14 +350,14 @@ public class PresentationLayer {
     // Public Menu
     // 1 Search by Keyword
     // 2 Back
-    // 3 Exit Program
+    // 3 Exit 
     // -------------------------
     private static void publicMenu() {
         while (true) {
             System.out.println("\n=== PUBLIC USER MENU ===");
             System.out.println("1) Search Professors by Keyword");
-            System.out.println("2) Back");
-            System.out.println("3) Exit Program");
+            System.out.println("2) Logout");
+            System.out.println("3) Exit");
             System.out.print("Enter choice: ");
             String c = scanner.nextLine().trim();
 

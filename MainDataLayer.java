@@ -1,17 +1,17 @@
-// Group 5 - Final 
-// Base: your MainDataLayer.java
-// - Password encryption via encryptPassword(...) wrapper (currently SHA-256)
-
+// MainDataLayer.java 
 import java.sql.*;
 import java.util.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
+import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainDataLayer {
 
-  
     private Connection conn;
+    private static final String LOG_FILE = "error_log.txt";
 
     // ---------------------------
     // DB CONNECTION
@@ -29,18 +29,35 @@ public class MainDataLayer {
             conn = DriverManager.getConnection(url, userName, password);
             return true;
         } catch (Exception e) {
-            System.out.println("ERROR CONNECTING TO DATABASE.");
-            System.out.println("MESSAGE: " + e.getMessage());
+            
+            logError(e, "connect()");
             return false;
+        }
+    }
+
+    // --------------
+    // Simple logger 
+    // --------------
+    private void logError(Exception e, String context) {
+        try (FileWriter fw = new FileWriter(LOG_FILE, true);
+             BufferedWriter bw = new BufferedWriter(fw);
+             PrintWriter out = new PrintWriter(bw)) {
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            out.println("[" + LocalDateTime.now().format(fmt) + "] Context: " + context);
+            out.println(e.toString());
+            for (StackTraceElement st : e.getStackTrace()) {
+                out.println("\tat " + st.toString());
+            }
+            out.println(); 
+        } catch (IOException ioe) {
+            
         }
     }
 
     // ---------------------------
     // Password encryption wrapper
     // ---------------------------
-    // NOTE: professor's encryption routine can be plugged in here.
-    // Right now this uses SHA-256 (secure). To use the professor's encrypt method,
-    // replace the body of encryptPassword with a call to that routine.
     public String encryptPassword(String plain) {
         if (plain == null) return null;
         // SHA-256 implementation (safe fallback / default)
@@ -53,7 +70,7 @@ public class MainDataLayer {
             }
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
-            System.out.println("ERROR encryptPassword: algorithm not found.");
+            logError(e, "encryptPassword()");
             return null;
         }
     }
@@ -67,7 +84,8 @@ public class MainDataLayer {
 
         String hashed = encryptPassword(passwordPlain);
         if (hashed == null) {
-            System.out.println("ERROR registerAccount: could not hash password.");
+            // log and return failure
+            logError(new Exception("Password hashing returned null"), "registerAccount()");
             return -1;
         }
 
@@ -81,7 +99,7 @@ public class MainDataLayer {
                 if (gk.next()) accountId = gk.getInt(1);
             }
         } catch (SQLException e) {
-            System.out.println("ERROR registerAccount: " + e.getMessage());
+            logError(e, "registerAccount()");
         }
         return accountId;
     }
@@ -100,7 +118,7 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR authenticateAccount: " + e.getMessage());
+            logError(e, "authenticateAccount()");
         }
         return -1;
     }
@@ -113,7 +131,7 @@ public class MainDataLayer {
                 if (r.next()) return r.getString("role");
             }
         } catch (SQLException e) {
-            System.out.println("ERROR getRoleByAccountId: " + e.getMessage());
+            logError(e, "getRoleByAccountId()");
         }
         return null;
     }
@@ -155,7 +173,7 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR addProfessor: " + e.getMessage());
+            logError(e, "addProfessor()");
         }
         return 0;
     }
@@ -168,7 +186,7 @@ public class MainDataLayer {
             ps.setInt(3, professorID);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR updateProfessor: " + e.getMessage());
+            logError(e, "updateProfessor()");
             return 0;
         }
     }
@@ -179,7 +197,7 @@ public class MainDataLayer {
             ps.setInt(1, professorID);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR deleteProfessor: " + e.getMessage());
+            logError(e, "deleteProfessor()");
             return 0;
         }
     }
@@ -190,20 +208,18 @@ public class MainDataLayer {
     public int addAbstract(int abstractID, String title, String abstractText, String filePath) {
         try {
             if (abstractID > 0) {
-                String sql = "INSERT INTO Abstract (abstractID, title, abstractText, filePath) VALUES (?,?,?,?)";
+                String sql = "INSERT INTO Abstract (abstractID, title, abstractText) VALUES (?,?,?)";
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     ps.setInt(1, abstractID);
                     ps.setString(2, title);
                     ps.setString(3, abstractText);
-                    if (filePath != null) ps.setString(4, filePath); else ps.setNull(4, Types.VARCHAR);
                     return ps.executeUpdate();
                 }
             } else {
-                String sql = "INSERT INTO Abstract (title, abstractText, filePath) VALUES (?,?,?)";
+                String sql = "INSERT INTO Abstract (title, abstractText) VALUES (?,?)";
                 try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                     ps.setString(1, title);
                     ps.setString(2, abstractText);
-                    if (filePath != null) ps.setString(3, filePath); else ps.setNull(3, Types.VARCHAR);
                     int updated = ps.executeUpdate();
                     if (updated > 0) {
                         try (ResultSet gk = ps.getGeneratedKeys()) {
@@ -213,7 +229,7 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR addAbstract: " + e.getMessage());
+            logError(e, "addAbstract()");
         }
         return 0;
     }
@@ -226,41 +242,39 @@ public class MainDataLayer {
             ps.setInt(3, abstractID);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR updateAbstract: " + e.getMessage());
+            logError(e, "updateAbstract()");
             return 0;
         }
     }
-    
+
     public boolean updateAbstractIfOwned(int professorID, int abstractID, String newTitle, String newText) {
-    String verifySql = "SELECT * FROM ProfessorAbstract WHERE professorID = ? AND abstractID = ?";
-    String updateSql = "UPDATE Abstract SET title = ?, abstractText = ? WHERE abstractID = ?";
+        String verifySql = "SELECT * FROM ProfessorAbstract WHERE professorID = ? AND abstractID = ?";
+        String updateSql = "UPDATE Abstract SET title = ?, abstractText = ? WHERE abstractID = ?";
 
-    try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
-        verifyStmt.setInt(1, professorID);
-        verifyStmt.setInt(2, abstractID);
-        ResultSet rs = verifyStmt.executeQuery();
+        try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
+            verifyStmt.setInt(1, professorID);
+            verifyStmt.setInt(2, abstractID);
+            ResultSet rs = verifyStmt.executeQuery();
 
-        if (!rs.next()) {
-            System.out.println("You do not own this abstract.");
+            if (!rs.next()) {
+                return false;
+            }
+        } catch (Exception e) {
+            logError(e, "updateAbstractIfOwned() - verify");
             return false;
         }
-    } catch (Exception e) {
-        System.out.println("ERROR verifying abstract ownership.");
-        return false;
+
+        try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+            updateStmt.setString(1, newTitle);
+            updateStmt.setString(2, newText);
+            updateStmt.setInt(3, abstractID);
+
+            return updateStmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            logError(e, "updateAbstractIfOwned() - update");
+            return false;
+        }
     }
-
-    try (PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
-        updateStmt.setString(1, newTitle);
-        updateStmt.setString(2, newText);
-        updateStmt.setInt(3, abstractID);
-
-        return updateStmt.executeUpdate() > 0;
-    } catch (Exception e) {
-        System.out.println("ERROR updating abstract.");
-        return false;
-    }
-}
-
 
     public int deleteAbstract(int abstractID) {
         String sql = "DELETE FROM Abstract WHERE abstractID = ?";
@@ -268,38 +282,36 @@ public class MainDataLayer {
             ps.setInt(1, abstractID);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR deleteAbstract: " + e.getMessage());
+            logError(e, "deleteAbstract()");
             return 0;
         }
     }
-    
+
     public boolean deleteAbstractIfOwned(int professorID, int abstractID) {
-    String verifySql = "SELECT * FROM ProfessorAbstract WHERE professorID = ? AND abstractID = ?";
+        String verifySql = "SELECT * FROM ProfessorAbstract WHERE professorID = ? AND abstractID = ?";
 
-    try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
-        verifyStmt.setInt(1, professorID);
-        verifyStmt.setInt(2, abstractID);
-        ResultSet rs = verifyStmt.executeQuery();
+        try (PreparedStatement verifyStmt = conn.prepareStatement(verifySql)) {
+            verifyStmt.setInt(1, professorID);
+            verifyStmt.setInt(2, abstractID);
+            ResultSet rs = verifyStmt.executeQuery();
 
-        if (!rs.next()) {
-            System.out.println("You do not own this abstract.");
+            if (!rs.next()) {
+                return false;
+            }
+        } catch (Exception e) {
+            logError(e, "deleteAbstractIfOwned() - verify");
             return false;
         }
-    } catch (Exception e) {
-        System.out.println("ERROR verifying abstract ownership.");
-        return false;
-    }
 
-    String deleteSql = "DELETE FROM Abstract WHERE abstractID = ?";
-    try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
-        deleteStmt.setInt(1, abstractID);
-        return deleteStmt.executeUpdate() > 0;
-    } catch (Exception e) {
-        System.out.println("ERROR deleting abstract.");
-        return false;
+        String deleteSql = "DELETE FROM Abstract WHERE abstractID = ?";
+        try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
+            deleteStmt.setInt(1, abstractID);
+            return deleteStmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            logError(e, "deleteAbstractIfOwned() - delete");
+            return false;
+        }
     }
-}
-
 
     public int addProfessorAbstract(int professorID, int abstractID, String authorRole) {
         String sql = "INSERT INTO ProfessorAbstract (professorID, abstractID, authorRole) VALUES (?, ?, ?)";
@@ -309,7 +321,7 @@ public class MainDataLayer {
             ps.setString(3, authorRole);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR addProfessorAbstract: " + e.getMessage());
+            logError(e, "addProfessorAbstract()");
             return 0;
         }
     }
@@ -317,47 +329,52 @@ public class MainDataLayer {
     // ---------------------------
     // Keyword helpers
     // ---------------------------
-    // ensureKeyword: finds existing keyword by exact match (case-insensitive) or inserts and returns id
-    public int ensureKeyword(String interest) {
-        if (interest == null || interest.isBlank()) return -1;
-        String find = "SELECT keywordID FROM Keyword WHERE LOWER(interest) = LOWER(?)";
-        try (PreparedStatement ps = conn.prepareStatement(find)) {
-            ps.setString(1, interest.trim());
-            try (ResultSet r = ps.executeQuery()) {
-                if (r.next()) return r.getInt(1);
-            }
-        } catch (SQLException e) {
-            System.out.println("ERROR ensureKeyword (find): " + e.getMessage());
-            return -1;
-        }
+    // ensureKeyword: finds existing keyword by exact match (case-insensitive) or inserts
+    public int ensureKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) return -1;
 
-        // not found -> insert
-        String ins = "INSERT INTO Keyword (interest) VALUES (?)";
-        try (PreparedStatement ps = conn.prepareStatement(ins, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, interest.trim());
-            int updated = ps.executeUpdate();
-            if (updated > 0) {
-                try (ResultSet gk = ps.getGeneratedKeys()) {
-                    if (gk.next()) return gk.getInt(1);
+        String selectQuery = "SELECT keywordID FROM Keyword WHERE LOWER(term) = LOWER(?)";
+        String insertQuery = "INSERT INTO Keyword (term) VALUES (?)";
+
+        try (PreparedStatement selectStmt = conn.prepareStatement(selectQuery)) {
+
+            selectStmt.setString(1, keyword.trim());
+            ResultSet rs = selectStmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("keywordID");  // Found existing keyword
+            }
+
+            // If not found, insert new keyword
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS)) {
+                insertStmt.setString(1, keyword.trim());
+                int updated = insertStmt.executeUpdate();
+                if (updated > 0) {
+                    ResultSet keys = insertStmt.getGeneratedKeys();
+                    if (keys.next()) {
+                        return keys.getInt(1);  // Return new keywordID
+                    }
                 }
             }
+
         } catch (SQLException e) {
-            System.out.println("ERROR ensureKeyword (insert): " + e.getMessage());
+            logError(e, "ensureKeyword()");
         }
-        return -1;
+
+        return -1;  // Only if something unexpected goes wrong
     }
 
     // getKeywordIdByName: find id but do not create new keyword (useful for delete/search)
     public int getKeywordIdByName(String interest) {
         if (interest == null || interest.isBlank()) return -1;
-        String sql = "SELECT keywordID FROM Keyword WHERE LOWER(interest) = LOWER(?)";
+        String sql = "SELECT keywordID FROM Keyword WHERE LOWER(term) = LOWER(?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, interest.trim());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
         } catch (SQLException e) {
-            System.out.println("ERROR getKeywordIdByName: " + e.getMessage());
+            logError(e, "getKeywordIdByName()");
         }
         return -1;
     }
@@ -369,7 +386,7 @@ public class MainDataLayer {
             ps.setInt(2, keywordID);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR addProfessorKeyword: " + e.getMessage());
+            logError(e, "addProfessorKeyword()");
             return 0;
         }
     }
@@ -381,7 +398,7 @@ public class MainDataLayer {
             ps.setInt(2, keywordID);
             return ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("ERROR addStudentKeyword: " + e.getMessage());
+            logError(e, "addStudentKeyword()");
             return 0;
         }
     }
@@ -395,8 +412,7 @@ public class MainDataLayer {
             ps.setInt(2, keywordID);
             rows = ps.executeUpdate();
         } catch (SQLException e) {
-            System.out.println("SQL ERROR -> deleteStudentKeyword()");
-            System.out.println("MESSAGE: " + e.getMessage());
+            logError(e, "deleteStudentKeyword()");
         }
         return rows;
     }
@@ -436,7 +452,7 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR addStudent: " + e.getMessage());
+            logError(e, "addStudent()");
         }
         return 0;
     }
@@ -453,7 +469,7 @@ public class MainDataLayer {
             "FROM Student s " +
             "JOIN StudentKeyword sk ON s.studentID = sk.studentID " +
             "JOIN Keyword k ON sk.keywordID = k.keywordID " +
-            "WHERE LOWER(k.interest) = LOWER(?)";
+            "WHERE LOWER(k.term) = LOWER(?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, interest.trim());
@@ -467,8 +483,7 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("SQL ERROR -> searchStudentByInterest()");
-            System.out.println("MESSAGE: " + e.getMessage());
+            logError(e, "searchStudentByInterest()");
         }
         return results;
     }
@@ -491,7 +506,7 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR addPublicUser: " + e.getMessage());
+            logError(e, "addPublicUser()");
         }
         return 0;
     }
@@ -507,7 +522,7 @@ public class MainDataLayer {
                 if (r.next()) return r.getInt(1);
             }
         } catch (SQLException e) {
-            System.out.println("ERROR findProfessorIdByAccountId: " + e.getMessage());
+            logError(e, "findProfessorIdByAccountId()");
         }
         return -1;
     }
@@ -520,7 +535,7 @@ public class MainDataLayer {
                 if (r.next()) return r.getInt(1);
             }
         } catch (SQLException e) {
-            System.out.println("ERROR findStudentIdByAccountId: " + e.getMessage());
+            logError(e, "findStudentIdByAccountId()");
         }
         return -1;
     }
@@ -544,49 +559,67 @@ public class MainDataLayer {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR findMatchingFaculty: " + e.getMessage());
+            logError(e, "findMatchingFaculty()");
         }
         return out;
     }
 
     public List<String> searchFacultyByKeyword(String interest) {
         List<String> out = new ArrayList<>();
+
+        // FIXED: k.term (NOT k.interest)
+        // Also made case-insensitive with LOWER()
         String sql = "SELECT DISTINCT p.firstName, p.lastName, p.email FROM Professor p " +
                      "JOIN ProfessorKeyword pk ON p.professorID = pk.professorID " +
-                     "JOIN Keyword k ON pk.keywordID = k.keywordID WHERE k.interest LIKE ?";
+                     "JOIN Keyword k ON pk.keywordID = k.keywordID " +
+                     "WHERE LOWER(k.term) LIKE LOWER(?)";
+
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, "%" + interest + "%");
+            ps.setString(1, "%" + interest + "%");   // supports partial search
             try (ResultSet r = ps.executeQuery()) {
                 while (r.next()) {
-                    out.add(String.format("%s %s <%s>", r.getString(1), r.getString(2), r.getString(3)));
+                    out.add(String.format(
+                        "%s %s <%s>",
+                        r.getString("firstName"),
+                        r.getString("lastName"),
+                        r.getString("email")
+                    ));
                 }
             }
         } catch (SQLException e) {
-            System.out.println("ERROR searchFacultyByKeyword: " + e.getMessage());
+            logError(e, "searchFacultyByKeyword()");
         }
+
         return out;
     }
 
     public List<String> listAllAbstracts() {
-        List<String> out = new ArrayList<>();
-        String sql = "SELECT a.abstractID, a.title, a.abstractText, a.filePath, GROUP_CONCAT(CONCAT(p.firstName, ' ', p.lastName) SEPARATOR '; ') AS authors " +
-                     "FROM Abstract a LEFT JOIN ProfessorAbstract pa ON a.abstractID = pa.abstractID " +
-                     "LEFT JOIN Professor p ON pa.professorID = p.professorID " +
-                     "GROUP BY a.abstractID, a.title, a.abstractText, a.filePath ORDER BY a.abstractID";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet r = ps.executeQuery()) {
-            while (r.next()) {
-                int id = r.getInt("abstractID");
-                String t = r.getString("title");
-                String txt = r.getString("abstractText");
-                String fp = r.getString("filePath");
-                String authors = r.getString("authors");
-                out.add(String.format("%d: %s\n   %s\n   Authors: %s\n   File: %s", id, t, txt, (authors==null?"(none)":authors), (fp==null?"(none)":fp)));
+        List<String> list = new ArrayList<>();
+
+        String query = "SELECT abstractID, title, abstractText FROM Abstract";
+
+        try (PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                int id = rs.getInt("abstractID");
+                String title = rs.getString("title");
+                String text = rs.getString("abstractText");
+
+                String formatted =
+                    "Abstract ID: " + id + "\n" +
+                    "Title: " + title + "\n" +
+                    "Text: " + text + "\n" +
+                    "--------------------------";
+
+                list.add(formatted);
             }
+
         } catch (SQLException e) {
-            System.out.println("ERROR listAllAbstracts: " + e.getMessage());
+            logError(e, "listAllAbstracts()");
         }
-        return out;
+
+        return list;
     }
 
     // ---------------------------
