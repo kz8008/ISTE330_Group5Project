@@ -265,86 +265,105 @@ public class PresentationLayer {
 
     // -------------------------
     // Student Menu
-    // 1 Add Student Keyword
-    // 2 Delete Student Keyword
-    // 3 View All Faculty Abstracts
-    // 4 Find Matching Professors
-    // 5 Search Faculty by Keyword
-    // 6 Back
-    // 7 Exit
     // -------------------------
-    private static void studentMenu() {
-        int stuId = dl.findStudentIdByAccountId(currentAccountId);
-        if (stuId < 0) {
-            System.out.println("Student profile not found for this account.");
-            return;
-        }
-        while (true) {
-            System.out.println("\n=== STUDENT MENU ===");
-            System.out.println("1) Add Your Interests");
-            System.out.println("2) Mofify Your Interests");
-            System.out.println("3) View All Professor Abstracts");
-            System.out.println("4) Find Professors By Mutual Interests");
-            System.out.println("5) Search Professors By Interests");
-            System.out.println("6) Logout");
-            System.out.println("7) Exit");
-            System.out.print("Enter choice: ");
-            String c = scanner.nextLine().trim();
+   private static void studentMenu() {
+    int stuId = dl.findStudentIdByAccountId(currentAccountId);
+    if (stuId < 0) {
+        System.out.println("Student profile not found for this account.");
+        return;
+    }
+    while (true) {
+        System.out.println("\n=== STUDENT MENU ===");
+        System.out.println("1) Add Your Interests");
+        System.out.println("2) Modify Your Interests");
+        System.out.println("3) View Your Interests");
+        System.out.println("4) View All Professor Abstracts");
+        System.out.println("5) Find Professors By Mutual Interests");
+        System.out.println("6) Search Professors By Interests");
+        System.out.println("7) Search Professors By Abstract Text");
+        System.out.println("8) Logout");
+        System.out.println("9) Exit");
+        System.out.print("Enter choice: ");
+        String c = scanner.nextLine().trim();
 
-            switch (c) {
-                case "1":
-                    System.out.print("Enter an interest (1-3 words): ");
-                    String topic = scanner.nextLine().trim().toLowerCase();
-                    int kid = dl.ensureKeyword(topic);
-                    if (kid > 0) dl.addStudentKeyword(stuId, kid);
-                    System.out.println("Interest added.");
-                    break;
+        switch (c) {
 
-                case "2":
-                      System.out.print("Enter interest to remove (exact text): ");
-                      String toRemove = scanner.nextLine().trim().toLowerCase();
-                      int rid = dl.ensureKeyword(toRemove);
-                  
-                      if (rid > 0) {
-                          try {
-                              dl.deleteStudentKeyword(stuId, rid);
-                              System.out.println("Interest removed from your profile.");
-                          } catch (Exception e) {
-                              System.out.println("Delete keyword not implemented in data layer.");
-                          }
-                      } else {
-                          System.out.println("Interest was not found.");
-                      }
-                      break;
-   
-                case "3":
-                    List<String> all = dl.listAllAbstracts();
-                    if (all.isEmpty()) System.out.println("No abstracts available.");
-                    else all.forEach(System.out::println);
-                    break;
+            case "1": // Add interest
+                System.out.print("Enter an interest (1-3 words): ");
+                String topic = scanner.nextLine().trim().toLowerCase();
+                int kid = dl.ensureKeyword(topic);
+                if (kid > 0) dl.addStudentKeyword(stuId, kid);
+                System.out.println("Interest added.");
+                break;
 
-                case "4":
-                    List<String> matches = dl.findMatchingFaculty(stuId);
-                    if (matches.isEmpty()) System.out.println("No matches found.");
-                    else matches.forEach(System.out::println);
-                    break;
+            case "2": // Remove interest
+                System.out.print("Enter interest to remove (exact text): ");
+                String toRemove = scanner.nextLine().trim().toLowerCase();
+                int rid = dl.ensureKeyword(toRemove);
+                if (rid > 0) {
+                    try {
+                        dl.deleteStudentKeyword(stuId, rid);
+                        System.out.println("Interest removed from your profile.");
+                    } catch (Exception e) {
+                        System.out.println("Delete keyword not implemented in data layer.");
+                    }
+                } else {
+                    System.out.println("Interest was not found.");
+                }
+                break;
 
-                case "5":
-                    System.out.print("Enter keyword to search a professor: ");
-                    String key = scanner.nextLine().trim();
-                    List<String> profs = dl.searchFacultyByKeyword(key);
-                    if (profs.isEmpty()) System.out.println("No professors found.");
-                    else profs.forEach(System.out::println);
-                    break;
+            case "3": // View your interests
+                List<String> myInterests = dl.getAllStudentInterests(stuId);
+                if (myInterests.isEmpty()) System.out.println("You have no interests added.");
+                else myInterests.forEach(System.out::println);
+                break;
 
-                case "6": return;
-                case "7":
-                    if (confirmExit()) { dl.close(); System.out.println("Goodbye."); System.exit(0); }
-                    break;
-                default: System.out.println("Invalid."); break;
-            }
+            case "4": // View all abstracts
+                List<String> all = dl.listAllAbstracts();
+                if (all.isEmpty()) System.out.println("No abstracts available.");
+                else all.forEach(System.out::println);
+                break;
+
+            case "5": // Find by mutual interests
+                List<String> matches = dl.findMatchingFaculty(stuId);
+                if (matches.isEmpty()) System.out.println("No matches found.");
+                else matches.forEach(System.out::println);
+                break;
+
+            case "6": // Search professors by interest keyword
+                System.out.print("Enter keyword to search a professor: ");
+                String key = scanner.nextLine().trim();
+                List<String> profs = dl.searchFacultyByKeyword(key);
+                if (profs.isEmpty()) System.out.println("No professors found.");
+                else profs.forEach(System.out::println);
+                break;
+
+            case "7": // Search professors by abstract text
+                System.out.print("Enter text to search abstracts: ");
+                String text = scanner.nextLine().trim();
+                List<String> absMatches2 = dl.searchProfessorsByAbstractText(text);
+                if (absMatches2.isEmpty()) System.out.println("No professors found.");
+                else absMatches2.forEach(System.out::println);
+                break;
+
+            case "8": // Logout
+                return;
+
+            case "9": // Exit
+                if (confirmExit()) {
+                    dl.close();
+                    System.out.println("Goodbye.");
+                    System.exit(0);
+                }
+                break;
+
+            default:
+                System.out.println("Invalid.");
+                break;
         }
     }
+}
+
 
     // -------------------------
     // Public Menu

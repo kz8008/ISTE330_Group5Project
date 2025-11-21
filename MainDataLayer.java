@@ -571,6 +571,56 @@ public class MainDataLayer {
         }
         return -1;
     }
+    
+    public List<String> listStudentKeywords(int studentID) {
+    List<String> out = new ArrayList<>();
+    String sql = "SELECT k.term FROM Keyword k " +
+                 "JOIN StudentKeyword sk ON k.keywordID = sk.keywordID " +
+                 "WHERE sk.studentID = ?";
+
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, studentID);
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(rs.getString("term"));
+            }
+        }
+    } catch (SQLException e) {
+        logError(e, "listStudentKeywords()");
+    }
+    return out;
+}
+
+      public List<String> searchAbstracts(String text) {
+          List<String> list = new ArrayList<>();
+          if (text == null || text.isBlank()) return list;
+      
+          String sql =
+              "SELECT abstractID, title, abstractText " +
+              "FROM Abstract " +
+              "WHERE title LIKE ? OR abstractText LIKE ?";
+      
+          try (PreparedStatement ps = conn.prepareStatement(sql)) {
+              ps.setString(1, "%" + text + "%");
+              ps.setString(2, "%" + text + "%");
+      
+              try (ResultSet rs = ps.executeQuery()) {
+                  while (rs.next()) {
+                      String formatted =
+                          "Abstract ID: " + rs.getInt("abstractID") + "\n" +
+                          "Title: " + rs.getString("title") + "\n" +
+                          "Text: " + rs.getString("abstractText") + "\n" +
+                          "--------------------------";
+                      list.add(formatted);
+                  }
+              }
+          } catch (SQLException e) {
+              logError(e, "searchAbstracts()");
+          }
+          return list;
+      }
+
+
 
     // ---------------------------
     // Matching & search results (returns lists)
@@ -595,6 +645,83 @@ public class MainDataLayer {
         }
         return out;
     }
+    
+    public List<String> getStudentInterests(int studentId) {
+    List<String> out = new ArrayList<>();
+    String sql = "SELECT k.keyword FROM StudentKeyword sk " +
+                 "JOIN Keyword k ON sk.keywordID = k.keywordID " +
+                 "WHERE sk.studentID = ?";
+
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, studentId);
+        try (ResultSet r = ps.executeQuery()) {
+            while (r.next()) out.add(r.getString(1));
+        }
+    } catch (SQLException e) {
+        logError(e, "getStudentInterests()");
+    }
+    return out;
+}
+
+   public List<String> searchProfessorsByAbstractText(String text) {
+    List<String> out = new ArrayList<>();
+    if (text == null || text.isBlank()) return out;
+
+    String sql =
+        "SELECT p.firstName, p.lastName, p.email, " +
+        "       a.abstractID, a.title, a.abstractText " +
+        "FROM Professor p " +
+        "JOIN ProfessorAbstract pa ON p.professorID = pa.professorID " +
+        "JOIN Abstract a ON pa.abstractID = a.abstractID " +
+        "WHERE a.title LIKE ? OR a.abstractText LIKE ?";
+
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, "%" + text + "%");
+        ps.setString(2, "%" + text + "%");
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String formatted =
+                    "Professor: " + rs.getString("firstName") + " " + rs.getString("lastName") + "\n" +
+                    "Email: " + rs.getString("email") + "\n" +
+                    "Abstract ID: " + rs.getInt("abstractID") + "\n" +
+                    "Title: " + rs.getString("title") + "\n" +
+                    "Text: " + rs.getString("abstractText") + "\n" +
+                    "----------------------------------------";
+                out.add(formatted);
+            }
+        }
+    } catch (SQLException e) {
+        logError(e, "searchProfessorsByAbstractText()");
+    }
+
+    return out;
+}
+
+public List<String> getAllStudentInterests(int studentID) {
+    List<String> out = new ArrayList<>();
+
+    String sql =
+        "SELECT k.term " +
+        "FROM Keyword k " +
+        "JOIN StudentKeyword sk ON k.keywordID = sk.keywordID " +
+        "WHERE sk.studentID = ?";
+
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, studentID);
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(rs.getString("term"));
+            }
+        }
+    } catch (SQLException e) {
+        logError(e, "getAllStudentInterests()");
+    }
+
+    return out;
+}
+
 
     public List<String> searchFacultyByKeyword(String interest) {
     List<String> out = new ArrayList<>();
