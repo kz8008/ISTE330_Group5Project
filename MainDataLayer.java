@@ -11,7 +11,6 @@ import java.time.format.DateTimeFormatter;
 public class MainDataLayer {
 
     private Connection conn;
-    private static final String LOG_FILE = "error_log.txt";
 
     // ---------------------------
     // DB CONNECTION
@@ -30,28 +29,8 @@ public class MainDataLayer {
             return true;
         } catch (Exception e) {
             
-            logError(e, "connect()");
+         System.out.println("Error: " + e.getMessage());
             return false;
-        }
-    }
-
-    // --------------
-    // Simple logger 
-    // --------------
-    private void logError(Exception e, String context) {
-        try (FileWriter fw = new FileWriter(LOG_FILE, true);
-             BufferedWriter bw = new BufferedWriter(fw);
-             PrintWriter out = new PrintWriter(bw)) {
-
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            out.println("[" + LocalDateTime.now().format(fmt) + "] Context: " + context);
-            out.println(e.toString());
-            for (StackTraceElement st : e.getStackTrace()) {
-                out.println("\tat " + st.toString());
-            }
-            out.println(); 
-        } catch (IOException ioe) {
-            
         }
     }
 
@@ -70,10 +49,14 @@ public class MainDataLayer {
             }
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
-            logError(e, "encryptPassword()");
+            System.out.println("Error: " + e.getMessage());
             return null;
         }
     }
+    private void logError(Exception e, String context) {
+    System.out.println("An error occurred while processing your request.");
+    System.out.println("(Details: " + context + ")");
+}
 
     // ---------------------------
     // Account methods
@@ -85,7 +68,9 @@ public class MainDataLayer {
         String hashed = encryptPassword(passwordPlain);
         if (hashed == null) {
             // log and return failure
-            logError(new Exception("Password hashing returned null"), "registerAccount()");
+         System.out.println("An error occurred while registering the account.");
+            
+
             return -1;
         }
 
@@ -510,6 +495,53 @@ public class MainDataLayer {
         }
         return 0;
     }
+    
+    // ---------------------------------------------------
+    // Public User Keyword (Guest Interests)
+   //  ---------------------------------------------------
+      public int addPublicKeyword(int publicID, int keywordID) {
+          String sql = "INSERT INTO PublicKeyword (publicID, keywordID) VALUES (?, ?)";
+          try (PreparedStatement ps = conn.prepareStatement(sql)) {
+              ps.setInt(1, publicID);
+              ps.setInt(2, keywordID);
+              return ps.executeUpdate();
+          } catch (SQLException e) {
+              logError(e, "addPublicKeyword()");
+              return 0;
+          }
+      }
+      
+      public int deletePublicKeyword(int publicID, int keywordID) {
+          String sql = "DELETE FROM PublicKeyword WHERE publicID = ? AND keywordID = ?";
+          try (PreparedStatement ps = conn.prepareStatement(sql)) {
+              ps.setInt(1, publicID);
+              ps.setInt(2, keywordID);
+              return ps.executeUpdate();
+          } catch (SQLException e) {
+              logError(e, "deletePublicKeyword()");
+              return 0;
+          }
+      }
+      
+      public List<String> listPublicKeywords(int publicID) {
+          List<String> out = new ArrayList<>();
+          String sql = "SELECT k.term FROM Keyword k "
+                     + "JOIN PublicKeyword pk ON k.keywordID = pk.keywordID "
+                     + "WHERE pk.publicID = ?";
+      
+          try (PreparedStatement ps = conn.prepareStatement(sql)) {
+              ps.setInt(1, publicID);
+              try (ResultSet rs = ps.executeQuery()) {
+                  while (rs.next()) {
+                      out.add(rs.getString("term"));
+                  }
+              }
+          } catch (SQLException e) {
+              logError(e, "listPublicKeywords()");
+          }
+          return out;
+      }
+
 
     // ---------------------------
     // Finders
@@ -565,33 +597,105 @@ public class MainDataLayer {
     }
 
     public List<String> searchFacultyByKeyword(String interest) {
-        List<String> out = new ArrayList<>();
+    List<String> out = new ArrayList<>();
+    String sql = "SELECT DISTINCT p.firstName, p.lastName, p.buildingCode, p.officeNum, p.email " +
+                 "FROM Professor p " +
+                 "JOIN ProfessorKeyword pk ON p.professorID = pk.professorID " +
+                 "JOIN Keyword k ON pk.keywordID = k.keywordID " +
+                 "WHERE k.term LIKE ?";
 
-        // FIXED: k.term (NOT k.interest)
-        // Also made case-insensitive with LOWER()
-        String sql = "SELECT DISTINCT p.firstName, p.lastName, p.email FROM Professor p " +
-                     "JOIN ProfessorKeyword pk ON p.professorID = pk.professorID " +
-                     "JOIN Keyword k ON pk.keywordID = k.keywordID " +
-                     "WHERE LOWER(k.term) LIKE LOWER(?)";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, "%" + interest + "%");
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, "%" + interest + "%");   // supports partial search
-            try (ResultSet r = ps.executeQuery()) {
-                while (r.next()) {
-                    out.add(String.format(
-                        "%s %s <%s>",
-                        r.getString("firstName"),
-                        r.getString("lastName"),
-                        r.getString("email")
-                    ));
-                }
+        try (ResultSet r = ps.executeQuery()) {
+            while (r.next()) {
+                String line = String.format("%s %s | Building %s | Office %s | %s",
+                        r.getString(1), r.getString(2),
+                        r.getString(3), r.getString(4), r.getString(5));
+                out.add(line);
             }
-        } catch (SQLException e) {
-            logError(e, "searchFacultyByKeyword()");
         }
-
-        return out;
+    } catch (SQLException e) {
+        logError(e, "searchFacultyByKeyword()");
     }
+    return out;
+}
+      public int findPublicIdByAccountId(int accountId) {
+          String sql = "SELECT publicID FROM PublicUser WHERE accountID = ?";
+          try (PreparedStatement ps = conn.prepareStatement(sql)) {
+              ps.setInt(1, accountId);
+              try (ResultSet rs = ps.executeQuery()) {
+                  if (rs.next()) return rs.getInt(1);
+              }
+          } catch (SQLException e) {
+              logError(e, "findPublicIdByAccountId()");
+          }
+          return -1;
+      }
+
+
+   // ---------------------------------------------------
+      // Search Professors by Abstract Keyword
+      // ---------------------------------------------------
+      public List<String> searchFacultyByAbstract(String term) {
+          List<String> out = new ArrayList<>();
+      
+          String sql = 
+              "SELECT DISTINCT p.firstName, p.lastName, p.buildingCode, p.officeNum, p.email " +
+              "FROM Professor p " +
+              "JOIN ProfessorAbstract pa ON p.professorID = pa.professorID " +
+              "JOIN Abstract a ON pa.abstractID = a.abstractID " +
+              "WHERE a.title LIKE ? OR a.abstractText LIKE ?";
+      
+          try (PreparedStatement ps = conn.prepareStatement(sql)) {
+              ps.setString(1, "%" + term + "%");
+              ps.setString(2, "%" + term + "%");
+      
+              try (ResultSet r = ps.executeQuery()) {
+                  while (r.next()) {
+                      String line = String.format("%s %s | Building %s | Office %s | %s",
+                              r.getString(1), r.getString(2),
+                              r.getString(3), r.getString(4), r.getString(5));
+                      out.add(line);
+                  }
+              }
+          } catch (SQLException e) {
+              logError(e, "searchFacultyByAbstract()");
+          }
+      
+          return out;
+      }
+      
+    public List<String> getProfessorAbstracts(int professorID) {
+    List<String> out = new ArrayList<>();
+
+    String sql =
+        "SELECT a.abstractID, a.title, a.abstractText " +
+        "FROM Abstract a " +
+        "JOIN ProfessorAbstract pa ON a.abstractID = pa.abstractID " +
+        "WHERE pa.professorID = ?";
+
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, professorID);
+
+        try (ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String formatted =
+                    "Abstract ID: " + rs.getInt("abstractID") + "\n" +
+                    "Title: " + rs.getString("title") + "\n" +
+                    "Text: " + rs.getString("abstractText") + "\n" +
+                    "--------------------------";
+                out.add(formatted);
+            }
+        }
+    } catch (SQLException e) {
+        logError(e, "getProfessorAbstracts()");
+    }
+
+    return out;
+}
+
+
 
     public List<String> listAllAbstracts() {
         List<String> list = new ArrayList<>();

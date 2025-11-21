@@ -181,7 +181,7 @@ public class PresentationLayer {
             System.out.println("1) Add Abstract");
             System.out.println("2) Update Abstract");
             System.out.println("3) Delete Abstract");
-            System.out.println("4) Add Keyword");
+            System.out.println("4) Add Interests");
             System.out.println("5) Search Students by Interest");
             System.out.println("6) Logout");
             System.out.println("7) Exit");
@@ -230,11 +230,11 @@ public class PresentationLayer {
 
 
                 case "4":
-                    System.out.print("Keyword to add: ");
+                    System.out.print("Enter an interest (1-3 words): ");
                     String kw = scanner.nextLine().trim().toLowerCase();
                     int kwId = dl.ensureKeyword(kw);
                     if (kwId > 0) dl.addProfessorKeyword(profId, kwId);
-                    System.out.println("Keyword added/linked.");
+                    System.out.println("Interest added.");
                     break;
 
                 case "5":
@@ -348,35 +348,89 @@ public class PresentationLayer {
 
     // -------------------------
     // Public Menu
-    // 1 Search by Keyword
-    // 2 Back
-    // 3 Exit 
     // -------------------------
     private static void publicMenu() {
-        while (true) {
-            System.out.println("\n=== PUBLIC USER MENU ===");
-            System.out.println("1) Search Professors by Keyword");
-            System.out.println("2) Logout");
-            System.out.println("3) Exit");
-            System.out.print("Enter choice: ");
-            String c = scanner.nextLine().trim();
+    int pubId = dl.findPublicIdByAccountId(currentAccountId);
+    if (pubId < 0) {
+        System.out.println("Public user profile not found.");
+        return;
+    }
 
-            switch (c) {
-                case "1":
-                    System.out.print("Enter keyword: ");
-                    String kw = scanner.nextLine().trim();
-                    List<String> profs = dl.searchFacultyByKeyword(kw);
-                    if (profs.isEmpty()) System.out.println("No professors found.");
-                    else profs.forEach(System.out::println);
-                    break;
-                case "2": return;
-                case "3":
-                    if (confirmExit()) { dl.close(); System.out.println("Goodbye."); System.exit(0); }
-                    break;
-                default: System.out.println("Invalid."); break;
-            }
+    while (true) {
+        System.out.println("\n=== PUBLIC USER MENU ===");
+        System.out.println("1) Add Your Interests");
+        System.out.println("2) Modify Your Interests");
+        System.out.println("3) View Your Interests");
+        System.out.println("4) Search Professors By Interests");
+        System.out.println("5) Search Professors By Abstract Text");
+        System.out.println("6) View Professor Abstracts (All)");
+        System.out.println("7) Logout");
+        System.out.println("8) Exit");
+
+        System.out.print("Enter choice: ");
+        String c = scanner.nextLine().trim();
+
+        switch (c) {
+
+            case "1": // Add interest
+                System.out.print("Enter an interest (1–3 words): ");
+                String interest = scanner.nextLine().trim().toLowerCase();
+                int k1 = dl.ensureKeyword(interest);
+                if (k1 > 0) dl.addPublicKeyword(pubId, k1);
+                System.out.println("Interest added.");
+                break;
+
+            case "2": // Modify (delete) interest
+                System.out.print("Enter the exact interest to remove: ");
+                String remove = scanner.nextLine().trim().toLowerCase();
+                int k2 = dl.ensureKeyword(remove);
+                if (k2 > 0) {
+                    dl.deletePublicKeyword(pubId, k2);
+                    System.out.println("Interest removed.");
+                } else {
+                    System.out.println("Interest not found.");
+                }
+                break;
+
+            case "3": // View interests
+                List<String> list = dl.listPublicKeywords(pubId);
+                if (list.isEmpty()) System.out.println("You have no interests added.");
+                else list.forEach(System.out::println);
+                break;
+
+            case "4": // Search professors by interest
+                System.out.print("Enter interest: ");
+                String kw = scanner.nextLine().trim();
+                List<String> profs = dl.searchFacultyByKeyword(kw);
+                if (profs.isEmpty()) System.out.println("No professors found.");
+                else profs.forEach(System.out::println);
+                break;
+
+            case "5": // Search professors by abstract text
+                System.out.print("Enter text to search abstracts: ");
+                String term = scanner.nextLine().trim();
+                List<String> absMatches = dl.searchFacultyByAbstract(term);
+                if (absMatches.isEmpty()) System.out.println("No professors found.");
+                else absMatches.forEach(System.out::println);
+                break;
+
+            case "6": // View ALL professor abstracts
+                List<String> abstracts = dl.listAllAbstracts();
+                if (abstracts.isEmpty()) System.out.println("No abstracts available.");
+                else abstracts.forEach(System.out::println);
+                break;
+
+            case "7": return;
+
+            case "8":
+                if (confirmExit()) { dl.close(); System.out.println("Goodbye."); System.exit(0); }
+                break;
+
+            default:
+                System.out.println("Invalid choice.");
         }
     }
+}
 
     // -------------------------
     // Exit confirmation helper
