@@ -67,6 +67,10 @@ public class PresentationLayerGUI {
 
     }
 
+    // endregion ---------MAIN MENU -----------------
+
+    // region ---------LOGIN MENU -----------------
+
     // Pulls up the login menu
     private void showLoginMenu() {
         JFrame frame = new JFrame("Log In");
@@ -164,7 +168,11 @@ public class PresentationLayerGUI {
 
     } // end showloginMenu
 
-    //Pulls up register menu to select between roles
+    // endregion ---------LOGIN MENU -----------------
+
+    // region ---------REGISTER MENU -----------------
+
+    // Pulls up register menu to select between roles
     public void showRegisterMenu() {
         JFrame frame = new JFrame("Register");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -223,7 +231,7 @@ public class PresentationLayerGUI {
         });
     } // end showRegisterMenu
 
-    //pulls up student registration menu
+    // pulls up student registration menu
     private void showRegisterStudentMenu() {
         JFrame frame = new JFrame("Register Student");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -260,7 +268,7 @@ public class PresentationLayerGUI {
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
-        //submit handler
+        // submit handler
         btnSubmit.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
 
@@ -294,7 +302,7 @@ public class PresentationLayerGUI {
                 // Create student record
                 int sid = dl.addStudent(0, fn, ln, major, email, phone, accountId);
 
-                //if it worked, submit and open login menu
+                // if it worked, submit and open login menu
                 if (sid > 0) {
                     JOptionPane.showMessageDialog(frame,
                             "Student account created successfully!",
@@ -303,8 +311,8 @@ public class PresentationLayerGUI {
 
                     frame.dispose();
                     showLoginMenu();
-                } 
-                //otherwise, keep everything open and let user try again
+                }
+                // otherwise, keep everything open and let user try again
                 else {
                     JOptionPane.showMessageDialog(frame,
                             "Failed to create student profile.",
@@ -314,9 +322,7 @@ public class PresentationLayerGUI {
             }
         });
 
-        // ===============================
-        // Back Button Handler
-        // ===============================
+        // back button handler
         btnBack.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 frame.dispose();
@@ -325,15 +331,207 @@ public class PresentationLayerGUI {
         });
     } // end showStudentRegister
 
+    // shows prof register menu
     private void showRegisterProfessorMenu() {
-        System.out.println("Showing Student Menu (unimplemented)");
-    }
+        JFrame frame = new JFrame("Register Professor");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(500, 400);
 
+        JPanel panel = new JPanel(new GridLayout(9, 2, 5, 5));
+
+        // Text fields
+        JTextField usernameTF = new JTextField();
+        JTextField passwordTF = new JPasswordField();
+        JTextField firstNameTF = new JTextField();
+        JTextField lastNameTF = new JTextField();
+        JTextField buildingTF = new JTextField();
+        JTextField officeTF = new JTextField();
+        JTextField emailTF = new JTextField();
+        JTextField phoneTF = new JTextField();
+
+        // Create labels + fields with helper
+        createLabel("Username", panel, usernameTF);
+        createLabel("Password", panel, passwordTF);
+        createLabel("First Name", panel, firstNameTF);
+        createLabel("Last Name", panel, lastNameTF);
+        createLabel("Building Code", panel, buildingTF);
+        createLabel("Office Number", panel, officeTF);
+        createLabel("Email", panel, emailTF);
+        createLabel("Phone (xxx-xxx-xxxx)", panel, phoneTF);
+
+        // Buttons
+        JButton btnBack = createButton("Back", panel);
+        JButton btnSubmit = createButton("Submit", panel);
+
+        // Pressing Enter triggers Submit
+        frame.getRootPane().setDefaultButton(btnSubmit);
+
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        // submit handler
+        btnSubmit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+
+                String username = usernameTF.getText().trim();
+                String password = passwordTF.getText().trim();
+                String fn = firstNameTF.getText().trim();
+                String ln = lastNameTF.getText().trim();
+                String building = buildingTF.getText().trim();
+                String office = officeTF.getText().trim();
+                String email = emailTF.getText().trim();
+                String phone = phoneTF.getText().trim();
+
+                // Basic required fields
+                if (username.isEmpty() || password.isEmpty() || fn.isEmpty() || ln.isEmpty()) {
+                    JOptionPane.showMessageDialog(frame,
+                            "Please fill in username, password, first name, and last name.",
+                            "Missing Information",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Create account
+                int accountId = dl.registerAccount(username, password, "Professor");
+                if (accountId <= 0) {
+                    JOptionPane.showMessageDialog(frame,
+                            "Could not create account. Username may already exist.",
+                            "Registration Failed",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Create professor record
+                int pid = dl.addProfessor(0, fn, ln, building, office, email, phone, accountId);
+
+                // If success
+                if (pid > 0) {
+                    JOptionPane.showMessageDialog(frame,
+                            "Professor account created successfully!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+
+                    frame.dispose();
+                    showLoginMenu(); // same behavior as Student registration
+                }
+                // Failure
+                else {
+                    JOptionPane.showMessageDialog(frame,
+                            "Failed to create professor profile.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // back handler
+        btnBack.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                showRegisterMenu();
+            }
+        });
+    } // end registerProfessorMenu
+
+    // brings up public user registration
     private void showRegisterPublicUserMenu() {
-        System.out.println("Showing Student Menu (unimplemented)");
-    }
+        JFrame frame = new JFrame("Register Public User");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(500, 350);
 
-    // endregion ---------MAIN MENU -----------------
+        JPanel panel = new JPanel(new GridLayout(7, 2, 5, 5));
+
+        // Text fields
+        JTextField usernameTF = new JTextField();
+        JTextField passwordTF = new JPasswordField();
+        JTextField firstNameTF = new JTextField();
+        JTextField lastNameTF = new JTextField();
+        JTextField organizationTF = new JTextField();
+        JTextField emailTF = new JTextField();
+
+        // Create labels + fields with helper
+        createLabel("Username", panel, usernameTF);
+        createLabel("Password", panel, passwordTF);
+        createLabel("First Name", panel, firstNameTF);
+        createLabel("Last Name", panel, lastNameTF);
+        createLabel("Organization", panel, organizationTF);
+        createLabel("Email", panel, emailTF);
+
+        // Buttons
+        JButton btnBack = createButton("Back", panel);
+        JButton btnSubmit = createButton("Submit", panel);
+
+        // Pressing Enter triggers Submit
+        frame.getRootPane().setDefaultButton(btnSubmit);
+
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        // submit handler
+        btnSubmit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+
+                String username = usernameTF.getText().trim();
+                String password = passwordTF.getText().trim();
+                String fn = firstNameTF.getText().trim();
+                String ln = lastNameTF.getText().trim();
+                String org = organizationTF.getText().trim();
+                String email = emailTF.getText().trim();
+
+                // Validate basic fields
+                if (username.isEmpty() || password.isEmpty() || fn.isEmpty() || ln.isEmpty()) {
+                    JOptionPane.showMessageDialog(frame,
+                            "Please fill in username, password, first name, and last name.",
+                            "Missing Information",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+
+                // Create account
+                int accountId = dl.registerAccount(username, password, "Public");
+                if (accountId <= 0) {
+                    JOptionPane.showMessageDialog(frame,
+                            "Could not create account. Username may already exist.",
+                            "Registration Failed",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Create public user record
+                int pid = dl.addPublicUser(fn, ln, org, email, accountId);
+
+                // if it worked, submit and open login menu
+                if (pid > 0) {
+                    JOptionPane.showMessageDialog(frame,
+                            "Public user account created successfully!",
+                            "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+
+                    frame.dispose();
+                    showLoginMenu();
+                }
+                // otherwise, keep everything open and let user try again
+                else {
+                    JOptionPane.showMessageDialog(frame,
+                            "Failed to create public profile.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // back handler
+        btnBack.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                showRegisterMenu();
+            }
+        });
+    } // end showRegisterPublicUserMenu
+
+    // endregion ---------REGISTER MENU -----------------
 
     // region ----------- STUDENT MENU -----------------
     private void showStudentMenu() {
