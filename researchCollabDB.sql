@@ -101,43 +101,48 @@ CREATE TABLE PublicKeyword (
 
 -- Accounts for Professors (role='Professor')
 INSERT INTO Account (username, passwordHash, role) VALUES
-  ('prof1', SHA1('Prof1pass'), 'Professor'),
-  ('prof2', SHA1('Prof2pass'), 'Professor');
-
+('prof1', '4fcbee9f3aed86984056c93249d5dce50af2f7bc73c5368be3fb5c40dbacf930', 'Professor'),
+('prof2', '802d52059a82b7b9b90d73d24c0b1c27ecf9da94ab1ad939acb358278f656d65', 'Professor');
 
 -- Accounts for Students (role='Student')
 INSERT INTO Account (username, passwordHash, role) VALUES
-  ('stud1', SHA1('Stud1pass'), 'Student'),
-  ('stud2', SHA1('Stud2pass'), 'Student');
+('stud1', 'a82f307c2e043c6f54b490d62d1df9550253ee8edfa727ee83a01ee7aa2384ab', 'Student'),
+('stud2', '28e533af51b339818317755a21be336288bc876d5857cca2be43abfff690c3fe', 'Student');
 
 -- Accounts for Public users (role='Public')
 INSERT INTO Account (username, passwordHash, role) VALUES
-  ('pub1', SHA1('Public1pass'), 'Public'),
-  ('pub2', SHA1('Public2pass'), 'Public');
+('pub1', 'cb06851faca233ab3da345ba45923536c6cb0a06165bf6eb9afdae8533fe3ca2', 'Public'),
+('pub2', '7a84eeeea4650e7551291ab590d3733585ce93ab6ab41de8a951c7db6a59e4a6', 'Public');
 
--- Insert Professors and link accountIDs via subquery
+-- Insert Professors and link accounts
 INSERT INTO Professor (firstName, lastName, buildingCode, officeNum, email, phone, accountID)
-VALUES
- ('Alice', 'Anderson', 'B1', '101', 'alice.anderson@rit.edu','555-0101',
-    (SELECT accountID FROM Account WHERE username='prof1')),
- ('Bob', 'Brown', 'B2', '202', 'bob.brown@rit.edu','555-0102',
-    (SELECT accountID FROM Account WHERE username='prof2'));
+SELECT 'Alice', 'Anderson', 'B1', '101', 'alice.anderson@rit.edu','585-555-0101', accountID
+FROM Account WHERE username='prof1';
+
+INSERT INTO Professor (firstName, lastName, buildingCode, officeNum, email, phone, accountID)
+SELECT 'Bob', 'Brown', 'B2', '202', 'bob.brown@rit.edu','585-555-0102', accountID
+FROM Account WHERE username='prof2';
+
 
 -- Insert Students and link accounts
 INSERT INTO Student (firstName, lastName, major, email, phone, accountID)
-VALUES
- ('Carol', 'Clark', 'CS', 'carol.clark@rit.edu','555-0201',
-    (SELECT accountID FROM Account WHERE username='stud1')),
- ('Dave', 'Davis', 'IS', 'dave.davis@rit.edu','555-0202',
-    (SELECT accountID FROM Account WHERE username='stud2'));
+SELECT 'Carol', 'Clark', 'CS', 'carol.clark@rit.edu','585-555-0201', accountID
+FROM Account WHERE username='stud1';
+
+INSERT INTO Student (firstName, lastName, major, email, phone, accountID)
+SELECT 'Dave', 'Davis', 'IS', 'dave.davis@rit.edu','585-555-0202', accountID
+FROM Account WHERE username='stud2';
+
 
 -- Insert Public users and link accounts
 INSERT INTO PublicUser (firstName, lastName, organization, email, accountID)
-VALUES
- ('Eve', 'Evans', 'Henrietta Library', 'eve.evans@library.org',
-    (SELECT accountID FROM Account WHERE username='pub1')),
- ('Frank', 'Foster', 'Local Media', 'frank.foster@media.org',
-    (SELECT accountID FROM Account WHERE username='pub2'));
+SELECT 'Eve', 'Evans', 'Henrietta Library', 'eve.evans@library.org', accountID
+FROM Account WHERE username='pub1';
+
+INSERT INTO PublicUser (firstName, lastName, organization, email, accountID)
+SELECT 'Frank', 'Foster', 'Local Media', 'frank.foster@media.org', accountID
+FROM Account WHERE username='pub2';
+
 
 -- Insert some keywords
 INSERT INTO Keyword (term) VALUES
