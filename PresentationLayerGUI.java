@@ -11,6 +11,12 @@ public class PresentationLayerGUI {
     public static Font myFontForOutput = new Font("Courier", Font.BOLD, 20);
 
     public PresentationLayerGUI() {
+
+        if (!dl.connect()) {
+            System.out.println("Could not connect to DB. Exiting.");
+            exit();
+        }
+
         showMainMenu();
     }
 
@@ -40,6 +46,7 @@ public class PresentationLayerGUI {
         btnLogin.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 showLoginMenu();
+                frame.dispose();
             }
         });
 
@@ -47,6 +54,7 @@ public class PresentationLayerGUI {
         btnRegister.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 showRegisterMenu();
+                frame.dispose();
             }
         });
 
@@ -56,17 +64,131 @@ public class PresentationLayerGUI {
                 exit();
             }
         });
+
     }
 
+    // Pulls up the login menu
     private void showLoginMenu() {
-        System.out.println("Showing Login Menu (unimplemented)");
+        JFrame frame = new JFrame("Log In");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(400, 200);
+
+        JPanel panel = new JPanel(new GridLayout(3, 2, 5, 5));
+
+        // Text fields
+        JTextField usernameTF = new JTextField();
+        JTextField passwordTF = new JPasswordField();
+
+        // Create labels for each field using helperr
+        createLabel("Username", panel, usernameTF);
+        createLabel("Password", panel, passwordTF);
+
+        // Buttons
+        JButton btnBack = createButton("Back", panel);
+        JButton btnSubmit = createButton("Submit", panel);
+
+        // lets enter trigger submit
+        frame.getRootPane().setDefaultButton(btnSubmit);
+
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        // Submit button handler
+        btnSubmit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameTF.getText();
+                String password = passwordTF.getText();
+
+                // check if login is valid
+                System.out.println(username + " " + password);
+                int aid = dl.authenticateAccount(username, password);
+
+                // if invalid
+                if (aid <= 0) {
+                    JOptionPane.showMessageDialog(null, "Login failed. Please check credentials.",
+                            "Login Failure",
+                            JOptionPane.INFORMATION_MESSAGE);
+                }
+                // if valid
+                else {
+                    currentAccountId = aid;
+                    currentRole = dl.getRoleByAccountId(aid);
+                    // check role is valid and found
+                    if (currentRole == null) {
+                        JOptionPane.showMessageDialog(null, "Could not determine role. Please create a new account.",
+                                "Role Not Found",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        frame.dispose();
+                        // if role not found, direct them to make a new account
+                        showRegisterMenu();
+                    }
+
+                    JOptionPane.showMessageDialog(null,
+                            "Successfully logged in as " + username + " with role " + currentRole,
+                            "Login Successful",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    System.out.println("Login successful. Role: " + currentRole);
+
+                    switch (currentRole) {
+                        case "Professor":
+                            showProfessorMenu();
+                            break;
+                        case "Student":
+                            showStudentMenu();
+                            break;
+                        case "Public":
+                            showPublicMenu();
+                            break;
+                        default:
+                            JOptionPane.showMessageDialog(null,
+                                    "Could not determine role. Please create a new account.",
+                                    "Role Not Found",
+                                    JOptionPane.INFORMATION_MESSAGE);
+                            showRegisterMenu();
+                            break;
+                    }
+                }
+
+                frame.dispose();
+            }
+        });
+
+        // Back button handler
+        btnBack.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                frame.dispose();
+                showMainMenu();
+            }
+        });
+
     }
 
-    private void showRegisterMenu() {
-         System.out.println("Showing Register Menu (unimplemented)");
+    public void showRegisterMenu() {
     }
 
     // endregion ---------MAIN MENU -----------------
+
+    // region ----------- STUDENT MENU -----------------
+    private void showStudentMenu() {
+        System.out.println("Showing Student Menu (unimplemented)");
+    }
+
+    // endregion ------------------ STUDENT MENU -------------------
+
+    // region ----------- PROFESSOR MENU -----------------
+    private void showProfessorMenu() {
+        System.out.println("Showing Professor Menu (unimplemented)");
+    }
+
+    // endregion ------------------ PROFESSOR MENU -------------------
+
+    // region --------------------- PUBLIC MENU ------------------------
+    private void showPublicMenu() {
+        System.out.println("Showing Public Menu (unimplemented)");
+    }
+
+    // endregion --------------------- PUBLIC MENU ------------------------
 
     // region --------------HELPER FACTORIES -----------------
 
@@ -83,6 +205,18 @@ public class PresentationLayerGUI {
         button.setFont(myFontForOutput);
         panel.add(button);
         return button;
+    }
+
+    // creates a label for a text field
+    private void createLabel(String text, JPanel panel, JTextField textField) {
+        JLabel label = new JLabel(text);
+        label.setFont(myFontForOutput);
+
+        textField.setFont(myFontForOutput);
+        textField.setForeground(Color.BLUE);
+
+        panel.add(label);
+        panel.add(textField);
     }
 
     // endregion
