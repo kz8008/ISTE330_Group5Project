@@ -1,6 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PresentationLayerGUI {
     private static final MainDataLayer dl = new MainDataLayer();;
@@ -105,7 +107,7 @@ public class PresentationLayerGUI {
                 String password = passwordTF.getText().trim();
 
                 // check if login is valid
-                System.out.println(username + " " + password);
+                // System.out.println(username + " " + password);
                 int aid = dl.authenticateAccount(username, password);
 
                 // if invalid
@@ -113,6 +115,7 @@ public class PresentationLayerGUI {
                     JOptionPane.showMessageDialog(null, "Login failed. Please check credentials.",
                             "Login Failure",
                             JOptionPane.INFORMATION_MESSAGE);
+                    showLoginMenu();
                 }
                 // if valid
                 else {
@@ -534,22 +537,748 @@ public class PresentationLayerGUI {
     // endregion ---------REGISTER MENU -----------------
 
     // region ----------- STUDENT MENU -----------------
-    private void showStudentMenu() {
-        System.out.println("Showing Student Menu (unimplemented)");
+    // pulls up gui for student menu
+    public void showStudentMenu() {
+        int stuId = dl.findStudentIdByAccountId(currentAccountId);
+        if (stuId < 0) {
+            JOptionPane.showMessageDialog(null,
+                    "Student profile not found for this account.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Frame setup
+        JFrame frame = new JFrame("Student Menu");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(430, 500);
+
+        JPanel panel = new JPanel(new GridLayout(9, 1, 10, 5));
+
+        // Create buttons
+        JButton btnAddInterests = createButton("Add Your Interests", panel);
+        JButton btnModifyInterests = createButton("Remove An Interest", panel);
+        JButton btnViewInterests = createButton("View Your Interests", panel);
+        JButton btnViewAllProfAbs = createButton("View All Professor Abstracts", panel);
+        JButton btnFindMutual = createButton("Find Professors By Mutual Interests", panel);
+        JButton btnSearchByInterests = createButton("Search Professors By Interests", panel);
+        JButton btnSearchByAbstract = createButton("Search Professors By Abstract Text", panel);
+        JButton btnLogout = createButton("Logout", panel);
+        JButton btnExit = createButton("Exit", panel);
+
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        btnAddInterests.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showAddInterestMenu(stuId);
+                frame.dispose();
+            }
+        });
+
+        btnModifyInterests.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showRemoveInterestsMenu(stuId);
+                frame.dispose();
+            }
+        });
+
+        btnViewInterests.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showViewInterestsMenu(stuId);
+                frame.dispose();
+            }
+        });
+
+        btnViewAllProfAbs.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showProfessorAbstractList();
+                frame.dispose();
+            }
+        });
+
+        btnFindMutual.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showMutualInterestProfessorMenu(stuId);
+                frame.dispose();
+            }
+        });
+
+        btnSearchByInterests.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showSearchProfessorByInterestMenu();
+                frame.dispose();
+            }
+        });
+
+        btnSearchByAbstract.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showSearchProfessorByAbstractTextMenu();
+                frame.dispose();
+            }
+        });
+
+        btnLogout.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showMainMenu();
+                frame.dispose();
+            }
+        });
+
+        btnExit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                exit();
+            }
+        });
+    }
+
+    // menu to add an interest
+    public void showAddInterestMenu(int stuId) {
+        String topic = JOptionPane.showInputDialog(
+                null,
+                "Enter an interest (1–3 words):",
+                "Add Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        // if user cancels
+        if (topic == null) {
+            showStudentMenu();
+            return;
+        }
+
+        topic = topic.trim().toLowerCase();
+        if (topic.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You must enter a topic.");
+            showAddInterestMenu(stuId);
+            return;
+        }
+
+        int kid = dl.ensureKeyword(topic);
+        if (kid > 0) {
+            dl.addStudentKeyword(stuId, kid);
+            JOptionPane.showMessageDialog(null, "Interest added.");
+        }
+
+        showStudentMenu();
+    }
+
+    // meny for remove (modify) interest
+    public void showRemoveInterestsMenu(int stuId) {
+        String toRemove = JOptionPane.showInputDialog(
+                null,
+                "Enter interest to remove (exact text):",
+                "Remove Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (toRemove == null) { // user canceled
+            showStudentMenu();
+            return;
+        }
+
+        toRemove = toRemove.trim().toLowerCase();
+        if (toRemove.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You must enter an interest name.");
+            showRemoveInterestsMenu(stuId);
+            return;
+        }
+
+        int rid = dl.ensureKeyword(toRemove);
+        if (rid > 0) {
+            try {
+                dl.deleteStudentKeyword(stuId, rid);
+                JOptionPane.showMessageDialog(null, "Interest removed from your profile.");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null,
+                        "Delete keyword not implemented in Data Layer.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Interest was not found.");
+        }
+
+        showStudentMenu();
+    }
+
+    // menu for showing interests
+    public void showViewInterestsMenu(int stuId) {
+        List<String> interests = dl.getAllStudentInterests(stuId);
+
+        List<JPanel> cards = new ArrayList<>();
+        // make a card for each line of data for better display
+        for (String i : interests) {
+            cards.add(createInterestCard(i));
+        }
+
+        showCardWindow("Your Interests", cards);
+    }
+
+    // helper for creating interest cards
+    private JPanel createInterestCard(String rawInterest) {
+        String interest = capitalizeWords(rawInterest);
+        return createCard("Interest", interest);
+    }
+
+    // menu for showing abstracts list
+    public void showProfessorAbstractList() {
+        List<String> list = dl.listAllAbstracts();
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String a : list) {
+            cards.add(createAbstractCard(a));
+        }
+
+        showCardWindow("All Professor Abstracts", cards);
+    }
+
+    // helper for abstract card formatting
+    private JPanel createAbstractCard(String raw) {
+        String title = "Professor Abstract";
+        String body = raw;
+
+        if (raw.contains(":")) {
+            int idx = raw.indexOf(":");
+            title = raw.substring(0, idx).trim();
+            body = raw.substring(idx + 1).trim();
+        }
+
+        return createCard(title, body);
+    }
+
+    // Mututal interests menu
+    public void showMutualInterestProfessorMenu(int stuId) {
+        List<String> matches = dl.findMatchingFaculty(stuId);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String m : matches) {
+            cards.add(createCard("Matching Faculty", m));
+        }
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No professors with mutual interests found.");
+        } else {
+            showCardWindow("Professors With Mutual Interests", cards);
+        }
+
+    }
+
+    // search prof by interest
+    public void showSearchProfessorByInterestMenu() {
+        String key = JOptionPane.showInputDialog(
+                null,
+                "Enter keyword to search professors:",
+                "Search by Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (key == null) {
+            showStudentMenu();
+            return;
+        }
+
+        key = key.trim();
+        List<String> profs = dl.searchFacultyByKeyword(key);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String prof : profs) {
+            cards.add(createCard("Professor", prof));
+        }
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No professors found.");
+        } else {
+            showCardWindow("Faculty Search Results", cards);
+        }
+    }
+
+    // search prof by abstract text
+    public void showSearchProfessorByAbstractTextMenu() {
+        String text = JOptionPane.showInputDialog(
+                null,
+                "Enter text to search abstracts:",
+                "Search by Abstract Text",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (text == null) {
+            showStudentMenu();
+            return;
+        }
+
+        text = text.trim();
+        List<String> results = dl.searchProfessorsByAbstractText(text);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String result : results) {
+            cards.add(createCard("Abstract Match", result));
+        }
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No abstracts found.");
+        } else {
+            showCardWindow("Abstract Search Results", cards);
+        }
     }
 
     // endregion ------------------ STUDENT MENU -------------------
 
     // region ----------- PROFESSOR MENU -----------------
-    private void showProfessorMenu() {
-        System.out.println("Showing Professor Menu (unimplemented)");
+    // main menu for professors
+    public void showProfessorMenu() {
+        int profId = dl.findProfessorIdByAccountId(currentAccountId);
+        if (profId < 0) {
+            JOptionPane.showMessageDialog(null,
+                    "Professor profile not found for this account.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Frame setup
+        JFrame frame = new JFrame("Professor Menu");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(450, 500);
+
+        JPanel panel = new JPanel(new GridLayout(7, 1, 10, 5));
+
+        // Create buttons
+        JButton btnAddAbstract = createButton("Add Abstract", panel);
+        JButton btnUpdateAbstract = createButton("Update Abstract", panel);
+        JButton btnDeleteAbstract = createButton("Delete Abstract", panel);
+        JButton btnAddInterest = createButton("Add Interests", panel);
+        JButton btnSearchStudents = createButton("Search Students by Interest", panel);
+        JButton btnLogout = createButton("Logout", panel);
+        JButton btnExit = createButton("Exit", panel);
+
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        btnAddAbstract.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showAddAbstractMenu(profId);
+            }
+        });
+
+        btnUpdateAbstract.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showUpdateAbstractMenu(profId);
+            }
+        });
+
+        btnDeleteAbstract.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showDeleteAbstractMenu(profId);
+            }
+        });
+
+        btnAddInterest.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showProfAddInterestMenu(profId);
+            }
+        });
+
+        btnSearchStudents.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showSearchStudentsByInterestMenu(profId);
+            }
+        });
+
+        btnLogout.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showMainMenu();
+                frame.dispose();
+            }
+        });
+
+        btnExit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                exit();
+            }
+        });
+    }
+
+    // add abstract
+    private void showAddAbstractMenu(int profId) {
+        String title = JOptionPane.showInputDialog(
+                null,
+                "Title:",
+                "Add Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (title == null)
+            return;
+
+        String text = JOptionPane.showInputDialog(
+                null,
+                "Abstract Text:",
+                "Add Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (text == null)
+            return;
+
+        String fp = JOptionPane.showInputDialog(
+                null,
+                "File Path (optional):",
+                "Add Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (fp != null && fp.trim().isEmpty())
+            fp = null;
+
+        int aId = dl.addAbstract(0, title, text, fp);
+        if (aId > 0) {
+            dl.addProfessorAbstract(profId, aId, "Author");
+            JOptionPane.showMessageDialog(null, "Abstract added with id: " + aId);
+        } else {
+            JOptionPane.showMessageDialog(null, "Failed to add abstract.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // update abstract
+    private void showUpdateAbstractMenu(int profId) {
+        String upIdS = JOptionPane.showInputDialog(
+                null,
+                "Abstract ID to update:",
+                "Update Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (upIdS == null)
+            return;
+
+        String newTitle = JOptionPane.showInputDialog(
+                null,
+                "New Title:",
+                "Update Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (newTitle == null)
+            return;
+
+        String newText = JOptionPane.showInputDialog(
+                null,
+                "New Text:",
+                "Update Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (newText == null)
+            return;
+
+        try {
+            int upId = Integer.parseInt(upIdS.trim());
+            boolean res = dl.updateAbstractIfOwned(profId, upId, newTitle, newText);
+            JOptionPane.showMessageDialog(null,
+                    res ? "Abstract updated." : "Unable to update abstract (not yours or invalid ID).");
+        } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(null, "Invalid ID.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // delete abstract
+    private void showDeleteAbstractMenu(int profId) {
+        String delIdS = JOptionPane.showInputDialog(
+                null,
+                "Abstract ID to delete:",
+                "Delete Abstract",
+                JOptionPane.PLAIN_MESSAGE);
+        if (delIdS == null)
+            return;
+
+        try {
+            int delId = Integer.parseInt(delIdS.trim());
+            boolean res = dl.deleteAbstractIfOwned(profId, delId);
+            JOptionPane.showMessageDialog(null,
+                    res ? "Abstract deleted." : "Unable to delete abstract (not yours or invalid ID).");
+        } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(null, "Invalid ID.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // add prof interest
+    private void showProfAddInterestMenu(int profId) {
+        String kw = JOptionPane.showInputDialog(
+                null,
+                "Enter an interest (1–3 words):",
+                "Add Interest",
+                JOptionPane.PLAIN_MESSAGE);
+        if (kw == null)
+            return;
+
+        kw = kw.trim().toLowerCase();
+        if (!kw.isEmpty()) {
+            int kwId = dl.ensureKeyword(kw);
+            if (kwId > 0)
+                dl.addProfessorKeyword(profId, kwId);
+            JOptionPane.showMessageDialog(null, "Interest added.");
+        } else {
+            JOptionPane.showMessageDialog(null, "You must enter a valid interest.");
+        }
+    }
+
+    // search students by interest
+    private void showSearchStudentsByInterestMenu(int profId) {
+        String interest = JOptionPane.showInputDialog(
+                null,
+                "Enter interest to search students for (exact match):",
+                "Search Students",
+                JOptionPane.PLAIN_MESSAGE);
+        if (interest == null)
+            return;
+
+        interest = interest.trim();
+        try {
+            List<String> students = dl.searchStudentByInterest(interest);
+            if (students == null || students.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "No students found.");
+            } else {
+                List<JPanel> cards = new ArrayList<>();
+                for (String s : students) {
+                    cards.add(createCard("Student", s));
+                }
+                showCardWindow("Students Matching Interest: " + interest, cards);
+            }
+        } catch (NoSuchMethodError | AbstractMethodError ex) {
+            JOptionPane.showMessageDialog(null,
+                    "Search by student interest not implemented in data layer.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(null,
+                    "Error searching students: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // endregion ------------------ PROFESSOR MENU -------------------
 
     // region --------------------- PUBLIC MENU ------------------------
-    private void showPublicMenu() {
-        System.out.println("Showing Public Menu (unimplemented)");
+    // public user main menu
+    public void showPublicMenu() {
+        int pubId = dl.findPublicIdByAccountId(currentAccountId);
+        if (pubId < 0) {
+            JOptionPane.showMessageDialog(null,
+                    "Public user profile not found.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Frame setup
+        JFrame frame = new JFrame("Public User Menu");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(430, 500);
+
+        JPanel panel = new JPanel(new GridLayout(8, 1, 10, 5));
+
+        // Create buttons
+        JButton btnAddInterest = createButton("Add Your Interests", panel);
+        JButton btnModifyInterest = createButton("Remove An Interest", panel);
+        JButton btnViewInterest = createButton("View Your Interests", panel);
+        JButton btnSearchByInterest = createButton("Search Professors By Interests", panel);
+        JButton btnSearchByAbstract = createButton("Search Professors By Abstract Text", panel);
+        JButton btnViewAllAbstracts = createButton("View Professor Abstracts (All)", panel);
+        JButton btnLogout = createButton("Logout", panel);
+        JButton btnExit = createButton("Exit", panel);
+
+        frame.add(panel);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        btnAddInterest.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showAddPublicInterestMenu(pubId);
+                frame.dispose();
+            }
+        });
+
+        btnModifyInterest.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showRemovePublicInterestMenu(pubId);
+                frame.dispose();
+            }
+        });
+
+        btnViewInterest.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showViewPublicInterests(pubId);
+                frame.dispose();
+            }
+        });
+
+        btnSearchByInterest.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showGuestSearchProfessorByInterestMenu();
+                frame.dispose();
+            }
+        });
+
+        btnSearchByAbstract.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showGuestSearchProfessorByAbstractTextMenu();
+                frame.dispose();
+            }
+        });
+
+        btnViewAllAbstracts.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showGuestProfessorAbstractList();
+                frame.dispose();
+            }
+        });
+
+        btnLogout.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showMainMenu();
+                frame.dispose();
+            }
+        });
+
+        btnExit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                exit();
+            }
+        });
+    }
+
+   // add public interst
+    private void showAddPublicInterestMenu(int pubId) {
+        String interest = JOptionPane.showInputDialog(
+                null,
+                "Enter an interest (1–3 words):",
+                "Add Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (interest == null) {
+            showPublicMenu();
+            return;
+        }
+
+        interest = interest.trim().toLowerCase();
+        if (interest.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You must enter a topic.");
+            showAddPublicInterestMenu(pubId);
+            return;
+        }
+
+        int k1 = dl.ensureKeyword(interest);
+        if (k1 > 0) {
+            dl.addPublicKeyword(pubId, k1);
+            JOptionPane.showMessageDialog(null, "Interest added.");
+        }
+
+        showPublicMenu();
+    }
+
+    //remove public interest
+    private void showRemovePublicInterestMenu(int pubId) {
+        String remove = JOptionPane.showInputDialog(
+                null,
+                "Enter the exact interest to remove:",
+                "Remove Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (remove == null) {
+            showPublicMenu();
+            return;
+        }
+
+        remove = remove.trim().toLowerCase();
+        if (remove.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You must enter an interest name.");
+            showRemovePublicInterestMenu(pubId);
+            return;
+        }
+
+        int k2 = dl.ensureKeyword(remove);
+        if (k2 > 0) {
+            dl.deletePublicKeyword(pubId, k2);
+            JOptionPane.showMessageDialog(null, "Interest removed.");
+        } else {
+            JOptionPane.showMessageDialog(null, "Interest not found.");
+        }
+
+        showPublicMenu();
+    }
+
+    //view public interests
+    private void showViewPublicInterests(int pubId) {
+        List<String> interests = dl.listPublicKeywords(pubId);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String i : interests) {
+            cards.add(createCard("Interest", capitalizeWords(i)));
+        }
+
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You have no interests added.");
+            showPublicMenu();
+        } else {
+            showCardWindow("Your Interests", cards);
+        }
+    }
+
+   //search profs by interest
+    private void showGuestSearchProfessorByInterestMenu() {
+        String key = JOptionPane.showInputDialog(
+                null,
+                "Enter interest:",
+                "Search Professors By Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (key == null) {
+            showPublicMenu();
+            return;
+        }
+
+        key = key.trim();
+        List<String> profs = dl.searchFacultyByKeyword(key);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String p : profs) {
+            cards.add(createCard("Professor", p));
+        }
+
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No professors found.");
+        } else {
+            showCardWindow("Faculty Search Results", cards);
+        }
+    }
+
+    //search by prof abstracts
+    private void showGuestSearchProfessorByAbstractTextMenu() {
+        String term = JOptionPane.showInputDialog(
+                null,
+                "Enter text to search abstracts:",
+                "Search Professors By Abstract Text",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (term == null) {
+            showPublicMenu();
+            return;
+        }
+
+        term = term.trim();
+        List<String> absMatches = dl.searchFacultyByAbstract(term);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String a : absMatches) {
+            cards.add(createCard("Abstract Match", a));
+        }
+
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No professors found.");
+        } else {
+            showCardWindow("Abstract Search Results", cards);
+        }
+    }
+
+    //view all abstracts
+    private void showGuestProfessorAbstractList() {
+        List<String> abstracts = dl.listAllAbstracts();
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String a : abstracts) {
+            cards.add(createAbstractCard(a));
+        }
+
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No abstracts available.");
+        } else {
+            showCardWindow("All Professor Abstracts", cards);
+        }
     }
 
     // endregion --------------------- PUBLIC MENU ------------------------
@@ -583,6 +1312,105 @@ public class PresentationLayerGUI {
         panel.add(textField);
     }
 
+    // shows a window of cards to display multiple lines of data
+    private void showCardWindow(String windowTitle, List<JPanel> cardList) {
+        JFrame frame = new JFrame(windowTitle);
+        frame.setSize(500, 600); // window size
+        frame.setLocationRelativeTo(null);
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        // Container panel for all cards
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+
+        for (JPanel card : cardList) {
+            // Force card to fixed height but stretch to window width
+            card.setMaximumSize(new Dimension(Integer.MAX_VALUE, card.getPreferredSize().height));
+            container.add(card);
+        }
+
+        // Wrap container in a scroll pane
+        JScrollPane scrollPane = new JScrollPane(container,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        frame.add(scrollPane);
+        frame.setVisible(true);
+
+        // go back to menu on close
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                switch (currentRole) {
+                    case "Professor":
+                        showProfessorMenu();
+                        break;
+                    case "Student":
+                        showStudentMenu();
+                        break;
+                    case "Public":
+                        showPublicMenu();
+                        break;
+                    default:
+                        JOptionPane.showMessageDialog(null,
+                                "Could not determine role. Please create a new account.",
+                                "Role Not Found",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        showRegisterMenu();
+                        break;
+                }
+                
+            }
+        });
+
+    }
+
+    // creates "cards" for display of multiple lines of data
+    private JPanel createCard(String title, String body) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.GRAY, 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)));
+
+        JLabel titleLabel = new JLabel("<html><b>" + title + "</b></html>");
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+
+        JTextArea bodyArea = new JTextArea(body);
+        bodyArea.setEditable(false);
+        bodyArea.setLineWrap(true);
+        bodyArea.setWrapStyleWord(true);
+        bodyArea.setBackground(new Color(245, 245, 245));
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(bodyArea, BorderLayout.CENTER);
+
+        // Wrapper adds spacing around card
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        wrapper.add(card);
+
+        return wrapper;
+    }
+
+    // capitalizes words
+    private String capitalizeWords(String text) {
+        if (text == null || text.isEmpty())
+            return text;
+
+        StringBuilder out = new StringBuilder();
+        for (String word : text.split("\\s+")) {
+            if (word.length() > 0) {
+                out.append(Character.toUpperCase(word.charAt(0)))
+                        .append(word.substring(1).toLowerCase())
+                        .append(" ");
+            }
+        }
+        return out.toString().trim();
+    }
+
     // endregion
 
     // region ------------- GLOBAL MENU OPTIONS ---------------------
@@ -598,12 +1426,12 @@ public class PresentationLayerGUI {
     private void exit() {
         if (confirmExit()) {
             dl.close();
+            // End Of Job data - EOJ routines
+            java.util.Date today = new java.util.Date();
+            System.out.println("\nProgram terminated @ " + today + "\n");
+            System.exit(0);
         }
 
-        // End Of Job data - EOJ routines
-        java.util.Date today = new java.util.Date();
-        System.out.println("\nProgram terminated @ " + today + "\n");
-        System.exit(0);
     }
 
     // endregion ------------- GLOBAL MENU OPTIONS ---------------------
