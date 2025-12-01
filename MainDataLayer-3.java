@@ -1,5 +1,3 @@
-package ISTE330_Group5Project;
-
 
 import java.beans.Statement;
 import java.sql.Connection;
@@ -14,7 +12,7 @@ public class MainDataLayer {
     private String sql;
     private Statement stmt;
     private int rows;
-    
+
     final String DEFAULT_DRIVER = "com.mysql.cj.jdbc.Driver";
 
     public MainDataLayer() {}
@@ -42,15 +40,15 @@ public class MainDataLayer {
     }
 
 // ==========================================================================
-// Professor Functions 
+// Professor Functions
 // ==========================================================================
 
 
     public int addProfessor(
-    int professorID, 
-    String fname, 
-    String lname, 
-    String buildingCode, 
+    int professorID,
+    String fname,
+    String lname,
+    String buildingCode,
     String officeNum,
     String email,
     String phone
@@ -130,8 +128,8 @@ public int deleteProfessor(int professorID) {
 }
 
 public int addAbstract(
-    int abstractID, 
-    String title, 
+    int abstractID,
+    String title,
     String abstractText
 ) {
     rows = 0;
@@ -316,7 +314,7 @@ public int registerAccount(String username, String password, Enum<UserType> role
         stmt.setString(2, username);
         stmt.setString(2, password);
         stmt.setString(2, role.name());
-        
+
         rows = stmt.executeUpdate();
     } catch (SQLException sqle) {
         // TODO: handle exception

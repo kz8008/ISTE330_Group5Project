@@ -1,4 +1,4 @@
-// MainDataLayer.java 
+// MainDataLayer.java
 import java.sql.*;
 import java.util.*;
 import java.security.MessageDigest;
@@ -28,7 +28,7 @@ public class MainDataLayer {
             conn = DriverManager.getConnection(url, userName, password);
             return true;
         } catch (Exception e) {
-            
+
          System.out.println("Error: " + e.getMessage());
             return false;
         }
@@ -69,7 +69,7 @@ public class MainDataLayer {
         if (hashed == null) {
             // log and return failure
          System.out.println("An error occurred while registering the account.");
-            
+
 
             return -1;
         }
@@ -311,6 +311,20 @@ public class MainDataLayer {
         }
     }
 
+    // will be able to find an abstract based 
+    public int getAbstractByID(int abstractID) {
+        String sql = "SELECT title, abstractText FROM abstract WHERE abstractID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, abstractID);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            logError(e, "getAbstractByID()");
+        }
+        return -1;
+    }
+
     // ---------------------------
     // Keyword helpers
     // ---------------------------
@@ -388,7 +402,7 @@ public class MainDataLayer {
         }
     }
 
-    // delete student_keyword 
+    // delete student_keyword
     public int deleteStudentKeyword(int studentID, int keywordID) {
         int rows = 0;
         String sql = "DELETE FROM StudentKeyword WHERE studentID = ? AND keywordID = ?";
@@ -400,6 +414,29 @@ public class MainDataLayer {
             logError(e, "deleteStudentKeyword()");
         }
         return rows;
+    }
+
+    public List<String> viewProfessorInterests(int professorID) {
+        List<String> out = new ArrayList<>();
+
+        String sql =
+        "select term from keyword inner join professorkeyword using(keywordID) where professorID = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, professorID);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String formatted =
+                       "Your Interests: " + rs.getString(1) + " ";
+                    out.add(formatted);
+                }
+            }
+        } catch (SQLException e) {
+            logError(e, "viewProfessorInterests()");
+        }
+
+        return out;
     }
 
     // ---------------------------
@@ -443,8 +480,64 @@ public class MainDataLayer {
     }
 
     // ---------------------------
-    // Search students by interest 
+    // Search students by interest
     // ---------------------------
+    public List<String> searchProfessorByInterest(String interest) {
+        List<String> results = new ArrayList<>();
+        if (interest == null || interest.isBlank()) return results;
+
+        String sql =
+            "SELECT CONCAT(p.firstName,' ', p.lastName) AS 'ProfessorName'," + 
+            "p.buildingCode, p.officeNum " +
+            "p.email, p.phone " +
+            "FROM professor p " +
+            "JOIN professorkeyword pk USING(professorID) " +
+            "JOIN Keyword k USING(keywordID) " +
+            "WHERE LOWER(k.term) = LOWER(?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, interest.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String name = rs.getString("ProfessorName");
+                    String bc = rs.getString("buildingCode");
+                    String officeNum = rs.getString("officeNum");
+                    String email = rs.getString("email");
+                    String phone = rs.getString("phone");
+                    results.add(name + "| Building Code: " + bc + " | Office Num: " + officeNum
+                    + " | Email: " + email + " | Phone: " + phone
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            logError(e, "searchProfessorByInterest()");
+        }
+        return results;
+    }
+
+    // ---------------------------
+    // Public user
+    // ---------------------------
+    public int addPublicUser(String firstName, String lastName, String organization, String email, Integer accountID) {
+        String sql = "INSERT INTO PublicUser (firstName, lastName, organization, email, accountID) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, firstName);
+            ps.setString(2, lastName);
+            ps.setString(3, organization);
+            ps.setString(4, email);
+            if (accountID != null) ps.setInt(5, accountID); else ps.setNull(5, Types.INTEGER);
+            int updated = ps.executeUpdate();
+            if (updated > 0) {
+                try (ResultSet gk = ps.getGeneratedKeys()) {
+                    if (gk.next()) return gk.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            logError(e, "addPublicUser()");
+        }
+        return 0;
+    }
+
     public List<String> searchStudentByInterest(String interest) {
         List<String> results = new ArrayList<>();
         if (interest == null || interest.isBlank()) return results;
@@ -473,29 +566,6 @@ public class MainDataLayer {
         return results;
     }
 
-    // ---------------------------
-    // Public user
-    // ---------------------------
-    public int addPublicUser(String firstName, String lastName, String organization, String email, Integer accountID) {
-        String sql = "INSERT INTO PublicUser (firstName, lastName, organization, email, accountID) VALUES (?, ?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, firstName);
-            ps.setString(2, lastName);
-            ps.setString(3, organization);
-            ps.setString(4, email);
-            if (accountID != null) ps.setInt(5, accountID); else ps.setNull(5, Types.INTEGER);
-            int updated = ps.executeUpdate();
-            if (updated > 0) {
-                try (ResultSet gk = ps.getGeneratedKeys()) {
-                    if (gk.next()) return gk.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            logError(e, "addPublicUser()");
-        }
-        return 0;
-    }
-    
     // ---------------------------------------------------
     // Public User Keyword (Guest Interests)
    //  ---------------------------------------------------
@@ -510,7 +580,7 @@ public class MainDataLayer {
               return 0;
           }
       }
-      
+
       public int deletePublicKeyword(int publicID, int keywordID) {
           String sql = "DELETE FROM PublicKeyword WHERE publicID = ? AND keywordID = ?";
           try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -522,13 +592,13 @@ public class MainDataLayer {
               return 0;
           }
       }
-      
+
       public List<String> listPublicKeywords(int publicID) {
           List<String> out = new ArrayList<>();
           String sql = "SELECT k.term FROM Keyword k "
                      + "JOIN PublicKeyword pk ON k.keywordID = pk.keywordID "
                      + "WHERE pk.publicID = ?";
-      
+
           try (PreparedStatement ps = conn.prepareStatement(sql)) {
               ps.setInt(1, publicID);
               try (ResultSet rs = ps.executeQuery()) {
@@ -571,7 +641,7 @@ public class MainDataLayer {
         }
         return -1;
     }
-    
+
     public List<String> listStudentKeywords(int studentID) {
     List<String> out = new ArrayList<>();
     String sql = "SELECT k.term FROM Keyword k " +
@@ -594,16 +664,16 @@ public class MainDataLayer {
       public List<String> searchAbstracts(String text) {
           List<String> list = new ArrayList<>();
           if (text == null || text.isBlank()) return list;
-      
+
           String sql =
               "SELECT abstractID, title, abstractText " +
               "FROM Abstract " +
               "WHERE title LIKE ? OR abstractText LIKE ?";
-      
+
           try (PreparedStatement ps = conn.prepareStatement(sql)) {
               ps.setString(1, "%" + text + "%");
               ps.setString(2, "%" + text + "%");
-      
+
               try (ResultSet rs = ps.executeQuery()) {
                   while (rs.next()) {
                       String formatted =
@@ -645,7 +715,7 @@ public class MainDataLayer {
         }
         return out;
     }
-    
+
     public List<String> getStudentInterests(int studentId) {
     List<String> out = new ArrayList<>();
     String sql = "SELECT k.keyword FROM StudentKeyword sk " +
@@ -766,18 +836,18 @@ public List<String> getAllStudentInterests(int studentID) {
       // ---------------------------------------------------
       public List<String> searchFacultyByAbstract(String term) {
           List<String> out = new ArrayList<>();
-      
-          String sql = 
+
+          String sql =
               "SELECT DISTINCT p.firstName, p.lastName, p.buildingCode, p.officeNum, p.email " +
               "FROM Professor p " +
               "JOIN ProfessorAbstract pa ON p.professorID = pa.professorID " +
               "JOIN Abstract a ON pa.abstractID = a.abstractID " +
               "WHERE a.title LIKE ? OR a.abstractText LIKE ?";
-      
+
           try (PreparedStatement ps = conn.prepareStatement(sql)) {
               ps.setString(1, "%" + term + "%");
               ps.setString(2, "%" + term + "%");
-      
+
               try (ResultSet r = ps.executeQuery()) {
                   while (r.next()) {
                       String line = String.format("%s %s | Building %s | Office %s | %s",
@@ -789,10 +859,10 @@ public List<String> getAllStudentInterests(int studentID) {
           } catch (SQLException e) {
               logError(e, "searchFacultyByAbstract()");
           }
-      
+
           return out;
       }
-      
+
     public List<String> getProfessorAbstracts(int professorID) {
     List<String> out = new ArrayList<>();
 
