@@ -841,7 +841,9 @@ public class PresentationLayerGUI {
         JButton btnAddAbstract = createButton("Add Abstract", panel);
         JButton btnUpdateAbstract = createButton("Update Abstract", panel);
         JButton btnDeleteAbstract = createButton("Delete Abstract", panel);
+        JButton btnViewAbstracts = createButton("View My Abstracts", panel);
         JButton btnAddInterest = createButton("Add Interests", panel);
+        JButton btnViewInterests = createButton("View My Interests", panel);
         JButton btnSearchStudents = createButton("Search Students by Interest", panel);
         JButton btnLogout = createButton("Logout", panel);
         JButton btnExit = createButton("Exit", panel);
@@ -865,6 +867,12 @@ public class PresentationLayerGUI {
         btnDeleteAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showDeleteAbstractMenu(profId);
+            }
+        });
+
+        btnViewAbstracts.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showViewAbstractsMenu(profId);
             }
         });
 
@@ -1004,6 +1012,19 @@ public class PresentationLayerGUI {
         } else {
             JOptionPane.showMessageDialog(null, "You must enter a valid interest.");
         }
+    }
+
+    // menu for showing interests
+    public void showProfViewInterestsMenu(int stuId) {
+        List<String> interests = dl.getAllStudentInterests(stuId);
+
+        List<JPanel> cards = new ArrayList<>();
+        // make a card for each line of data for better display
+        for (String i : interests) {
+            cards.add(createInterestCard(i));
+        }
+
+        showCardWindow("Your Interests", cards);
     }
 
     // search students by interest
