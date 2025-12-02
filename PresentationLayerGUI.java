@@ -573,14 +573,14 @@ public class PresentationLayerGUI {
         btnAddInterests.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showAddInterestMenu(stuId);
-                frame.dispose();
+
             }
         });
 
         btnModifyInterests.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showRemoveInterestsMenu(stuId);
-                frame.dispose();
+
             }
         });
 
@@ -608,14 +608,14 @@ public class PresentationLayerGUI {
         btnSearchByInterests.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showSearchProfessorByInterestMenu();
-                frame.dispose();
+
             }
         });
 
         btnSearchByAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showSearchProfessorByAbstractTextMenu();
-                frame.dispose();
+
             }
         });
 
@@ -641,9 +641,8 @@ public class PresentationLayerGUI {
                 "Add Interest",
                 JOptionPane.PLAIN_MESSAGE);
 
-        // if user cancels
+        // if cancel
         if (topic == null) {
-            showStudentMenu();
             return;
         }
 
@@ -659,8 +658,6 @@ public class PresentationLayerGUI {
             dl.addStudentKeyword(stuId, kid);
             JOptionPane.showMessageDialog(null, "Interest added.");
         }
-
-        showStudentMenu();
     }
 
     // meny for remove (modify) interest
@@ -672,7 +669,7 @@ public class PresentationLayerGUI {
                 JOptionPane.PLAIN_MESSAGE);
 
         if (toRemove == null) { // user canceled
-            showStudentMenu();
+
             return;
         }
 
@@ -771,7 +768,7 @@ public class PresentationLayerGUI {
                 JOptionPane.PLAIN_MESSAGE);
 
         if (key == null) {
-            showStudentMenu();
+
             return;
         }
 
@@ -798,7 +795,7 @@ public class PresentationLayerGUI {
                 JOptionPane.PLAIN_MESSAGE);
 
         if (text == null) {
-            showStudentMenu();
+
             return;
         }
 
@@ -861,14 +858,14 @@ public class PresentationLayerGUI {
         btnUpdateAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showUpdateAbstractMenu(profId);
-                frame.dispose();
+
             }
         });
 
         btnDeleteAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showDeleteAbstractMenu(profId);
-                frame.dispose();
+
             }
         });
 
@@ -882,7 +879,7 @@ public class PresentationLayerGUI {
         btnAddInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showProfAddInterestMenu(profId);
-                frame.dispose();
+
             }
         });
 
@@ -896,7 +893,7 @@ public class PresentationLayerGUI {
         btnSearchStudents.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showSearchStudentsByInterestMenu(profId);
-                frame.dispose();
+
             }
         });
 
@@ -1025,15 +1022,20 @@ public class PresentationLayerGUI {
                 "Enter an interest (1–3 words):",
                 "Add Interest",
                 JOptionPane.PLAIN_MESSAGE);
+
         if (kw == null)
             return;
 
         kw = kw.trim().toLowerCase();
+
         if (!kw.isEmpty()) {
             int kwId = dl.ensureKeyword(kw);
-            if (kwId > 0)
+            if (kwId > 0) {
                 dl.addProfessorKeyword(profId, kwId);
-            JOptionPane.showMessageDialog(null, "Interest added.");
+                JOptionPane.showMessageDialog(null, "Interest added.");
+            } else {
+                JOptionPane.showMessageDialog(null, "Could not add interest.");
+            }
         } else {
             JOptionPane.showMessageDialog(null, "You must enter a valid interest.");
         }
@@ -1126,14 +1128,13 @@ public class PresentationLayerGUI {
         btnAddInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showAddPublicInterestMenu(pubId);
-                frame.dispose();
             }
         });
 
         btnModifyInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showRemovePublicInterestMenu(pubId);
-                frame.dispose();
+
             }
         });
 
@@ -1154,14 +1155,14 @@ public class PresentationLayerGUI {
         btnSearchByInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showGuestSearchProfessorByInterestMenu();
-                frame.dispose();
+
             }
         });
 
         btnSearchByAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showGuestSearchProfessorByAbstractTextMenu();
-                frame.dispose();
+
             }
         });
 
@@ -1174,8 +1175,9 @@ public class PresentationLayerGUI {
 
         btnLogout.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                showMainMenu();
                 frame.dispose();
+                showMainMenu();
+                
             }
         });
 
@@ -1186,7 +1188,7 @@ public class PresentationLayerGUI {
         });
     }
 
-    // add public interst
+    // add public interest
     private void showAddPublicInterestMenu(int pubId) {
         String interest = JOptionPane.showInputDialog(
                 null,
@@ -1194,14 +1196,16 @@ public class PresentationLayerGUI {
                 "Add Interest",
                 JOptionPane.PLAIN_MESSAGE);
 
+        // user canceled
         if (interest == null) {
-            showPublicMenu();
             return;
         }
 
         interest = interest.trim().toLowerCase();
+
         if (interest.isEmpty()) {
             JOptionPane.showMessageDialog(null, "You must enter a topic.");
+            // retry input
             showAddPublicInterestMenu(pubId);
             return;
         }
@@ -1211,8 +1215,6 @@ public class PresentationLayerGUI {
             dl.addPublicKeyword(pubId, k1);
             JOptionPane.showMessageDialog(null, "Interest added.");
         }
-
-        showPublicMenu();
     }
 
     // remove public interest
@@ -1224,7 +1226,7 @@ public class PresentationLayerGUI {
                 JOptionPane.PLAIN_MESSAGE);
 
         if (remove == null) {
-            showPublicMenu();
+
             return;
         }
 
@@ -1288,7 +1290,7 @@ public class PresentationLayerGUI {
                 JOptionPane.PLAIN_MESSAGE);
 
         if (key == null) {
-            showPublicMenu();
+
             return;
         }
 
@@ -1316,7 +1318,7 @@ public class PresentationLayerGUI {
                 JOptionPane.PLAIN_MESSAGE);
 
         if (term == null) {
-            showPublicMenu();
+
             return;
         }
 
