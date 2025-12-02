@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PresentationLayerGUI {
-    private static final MainDataLayer dl = new MainDataLayer();;
+    private static final MainDataLayer dl = new MainDataLayer();
     private static int currentAccountId = -1;
     private static String currentRole = null;
 
@@ -79,7 +79,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(400, 200);
 
-        JPanel panel = new JPanel(new GridLayout(3, 2, 5, 5));
+        JPanel panel = new JPanel(new GridLayout(3, 2, 5, 0));
 
         // Text fields
         JTextField usernameTF = new JTextField();
@@ -240,7 +240,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(500, 400);
 
-        JPanel panel = new JPanel(new GridLayout(8, 2, 5, 5));
+        JPanel panel = new JPanel(new GridLayout(8, 2, 5, 0));
 
         // Text fields
         JTextField usernameTF = new JTextField();
@@ -340,7 +340,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(500, 400);
 
-        JPanel panel = new JPanel(new GridLayout(9, 2, 5, 5));
+        JPanel panel = new JPanel(new GridLayout(9, 2, 5, 0));
 
         // Text fields
         JTextField usernameTF = new JTextField();
@@ -443,7 +443,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(500, 350);
 
-        JPanel panel = new JPanel(new GridLayout(7, 2, 5, 5));
+        JPanel panel = new JPanel(new GridLayout(7, 2, 5, 0));
 
         // Text fields
         JTextField usernameTF = new JTextField();
@@ -553,7 +553,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(430, 500);
 
-        JPanel panel = new JPanel(new GridLayout(9, 1, 10, 5));
+        JPanel panel = new JPanel(new GridLayout(9, 1, 10, 0));
 
         // Create buttons
         JButton btnAddInterests = createButton("Add Your Interests", panel);
@@ -711,7 +711,7 @@ public class PresentationLayerGUI {
             cards.add(createInterestCard(i));
         }
 
-        showCardWindow("Your Interests", cards);
+        showCardWindow("", cards);
     }
 
     // helper for creating interest cards
@@ -737,8 +737,8 @@ public class PresentationLayerGUI {
         String title = "Professor Abstract";
         String body = raw;
 
-        if (raw.contains(":")) {
-            int idx = raw.indexOf(":");
+        if (raw.contains("\n")) {
+            int idx = raw.indexOf("\n");
             title = raw.substring(0, idx).trim();
             body = raw.substring(idx + 1).trim();
         }
@@ -835,7 +835,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(450, 500);
 
-        JPanel panel = new JPanel(new GridLayout(7, 1, 10, 5));
+        JPanel panel = new JPanel(new GridLayout(9, 1, 10, 0));
 
         // Create buttons
         JButton btnAddAbstract = createButton("Add Abstract", panel);
@@ -861,37 +861,50 @@ public class PresentationLayerGUI {
         btnUpdateAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showUpdateAbstractMenu(profId);
+                frame.dispose();
             }
         });
 
         btnDeleteAbstract.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showDeleteAbstractMenu(profId);
+                frame.dispose();
             }
         });
 
         btnViewAbstracts.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                showViewAbstractsMenu(profId);
+                showProfViewAbstractsMenu(profId);
+                frame.dispose();
             }
         });
 
         btnAddInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showProfAddInterestMenu(profId);
+                frame.dispose();
+            }
+        });
+
+        btnViewInterests.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showProfViewInterestsMenu(profId);
+                frame.dispose();
             }
         });
 
         btnSearchStudents.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showSearchStudentsByInterestMenu(profId);
+                frame.dispose();
             }
         });
 
         btnLogout.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                showMainMenu();
                 frame.dispose();
+                showMainMenu();
+
             }
         });
 
@@ -993,6 +1006,18 @@ public class PresentationLayerGUI {
         }
     }
 
+    // shows all of the current professor's abstracts
+    public void showProfViewAbstractsMenu(int profId) {
+        List<String> list = dl.getProfessorAbstracts(profId);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String a : list) {
+            cards.add(createAbstractCard(a));
+        }
+
+        showCardWindow("All Professor Abstracts", cards);
+    }
+
     // add prof interest
     private void showProfAddInterestMenu(int profId) {
         String kw = JOptionPane.showInputDialog(
@@ -1015,8 +1040,8 @@ public class PresentationLayerGUI {
     }
 
     // menu for showing interests
-    public void showProfViewInterestsMenu(int stuId) {
-        List<String> interests = dl.getAllStudentInterests(stuId);
+    public void showProfViewInterestsMenu(int profId) {
+        List<String> interests = dl.viewProfessorInterests(profId);
 
         List<JPanel> cards = new ArrayList<>();
         // make a card for each line of data for better display
@@ -1081,12 +1106,13 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(430, 500);
 
-        JPanel panel = new JPanel(new GridLayout(8, 1, 10, 5));
+        JPanel panel = new JPanel(new GridLayout(9, 1, 10, 0));
 
         // Create buttons
         JButton btnAddInterest = createButton("Add Your Interests", panel);
         JButton btnModifyInterest = createButton("Remove An Interest", panel);
         JButton btnViewInterest = createButton("View Your Interests", panel);
+        JButton btnViewMutuals = createButton("Find Professors with Mutual Interests", panel);
         JButton btnSearchByInterest = createButton("Search Professors By Interests", panel);
         JButton btnSearchByAbstract = createButton("Search Professors By Abstract Text", panel);
         JButton btnViewAllAbstracts = createButton("View Professor Abstracts (All)", panel);
@@ -1114,6 +1140,13 @@ public class PresentationLayerGUI {
         btnViewInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showViewPublicInterests(pubId);
+                frame.dispose();
+            }
+        });
+
+        btnViewMutuals.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showPublicMutualInterestsMenu(pubId);
                 frame.dispose();
             }
         });
@@ -1153,7 +1186,7 @@ public class PresentationLayerGUI {
         });
     }
 
-   // add public interst
+    // add public interst
     private void showAddPublicInterestMenu(int pubId) {
         String interest = JOptionPane.showInputDialog(
                 null,
@@ -1182,7 +1215,7 @@ public class PresentationLayerGUI {
         showPublicMenu();
     }
 
-    //remove public interest
+    // remove public interest
     private void showRemovePublicInterestMenu(int pubId) {
         String remove = JOptionPane.showInputDialog(
                 null,
@@ -1213,7 +1246,7 @@ public class PresentationLayerGUI {
         showPublicMenu();
     }
 
-    //view public interests
+    // view public interests
     private void showViewPublicInterests(int pubId) {
         List<String> interests = dl.listPublicKeywords(pubId);
 
@@ -1230,7 +1263,23 @@ public class PresentationLayerGUI {
         }
     }
 
-   //search profs by interest
+    // search by mutual interest
+    private void showPublicMutualInterestsMenu(int pubId) {
+        List<String> matches = dl.findMatchingFaculty(pubId);
+
+        List<JPanel> cards = new ArrayList<>();
+        for (String m : matches) {
+            cards.add(createCard("Matching Faculty", m));
+        }
+        if (cards.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No professors with mutual interests found.");
+        } else {
+            showCardWindow("Professors With Mutual Interests", cards);
+        }
+
+    }
+
+    // search profs by interest
     private void showGuestSearchProfessorByInterestMenu() {
         String key = JOptionPane.showInputDialog(
                 null,
@@ -1258,7 +1307,7 @@ public class PresentationLayerGUI {
         }
     }
 
-    //search by prof abstracts
+    // search by prof abstracts
     private void showGuestSearchProfessorByAbstractTextMenu() {
         String term = JOptionPane.showInputDialog(
                 null,
@@ -1286,7 +1335,7 @@ public class PresentationLayerGUI {
         }
     }
 
-    //view all abstracts
+    // view all abstracts
     private void showGuestProfessorAbstractList() {
         List<String> abstracts = dl.listAllAbstracts();
 
@@ -1382,7 +1431,7 @@ public class PresentationLayerGUI {
                         showRegisterMenu();
                         break;
                 }
-                
+
             }
         });
 
