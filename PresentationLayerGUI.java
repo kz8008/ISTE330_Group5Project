@@ -557,7 +557,7 @@ public class PresentationLayerGUI {
 
         // Create buttons
         JButton btnAddInterests = createButton("Add Your Interests", panel);
-        JButton btnModifyInterests = createButton("Remove An Interest", panel);
+        JButton btnRemoveInterest = createButton("Remove An Interest", panel);
         JButton btnViewInterests = createButton("View Your Interests", panel);
         JButton btnViewAllProfAbs = createButton("View All Professor Abstracts", panel);
         JButton btnFindMutual = createButton("Find Professors By Mutual Interests", panel);
@@ -577,7 +577,7 @@ public class PresentationLayerGUI {
             }
         });
 
-        btnModifyInterests.addActionListener(new ActionListener() {
+        btnRemoveInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showRemoveInterestsMenu(stuId);
 
@@ -832,7 +832,7 @@ public class PresentationLayerGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(450, 500);
 
-        JPanel panel = new JPanel(new GridLayout(9, 1, 10, 0));
+        JPanel panel = new JPanel(new GridLayout(10, 1, 10, 0));
 
         // Create buttons
         JButton btnAddAbstract = createButton("Add Abstract", panel);
@@ -840,6 +840,7 @@ public class PresentationLayerGUI {
         JButton btnDeleteAbstract = createButton("Delete Abstract", panel);
         JButton btnViewAbstracts = createButton("View My Abstracts", panel);
         JButton btnAddInterest = createButton("Add Interests", panel);
+        JButton btnRemoveInterest = createButton("Remove Interests", panel);
         JButton btnViewInterests = createButton("View My Interests", panel);
         JButton btnSearchStudents = createButton("Search Students by Interest", panel);
         JButton btnLogout = createButton("Logout", panel);
@@ -879,6 +880,13 @@ public class PresentationLayerGUI {
         btnAddInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 showProfAddInterestMenu(profId);
+
+            }
+        });
+
+        btnRemoveInterest.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                showProfRemoveInterestsMenu(profId);
 
             }
         });
@@ -1039,6 +1047,42 @@ public class PresentationLayerGUI {
         } else {
             JOptionPane.showMessageDialog(null, "You must enter a valid interest.");
         }
+    }
+
+    // meny for remove (modify) interest
+    public void showProfRemoveInterestsMenu(int profId) {
+        String toRemove = JOptionPane.showInputDialog(
+                null,
+                "Enter interest to remove (exact text):",
+                "Remove Interest",
+                JOptionPane.PLAIN_MESSAGE);
+
+        if (toRemove == null) { // user canceled
+            return;
+        }
+
+        toRemove = toRemove.trim().toLowerCase();
+        if (toRemove.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "You must enter an interest name.");
+            showProfRemoveInterestsMenu(profId);
+            return;
+        }
+
+        int rid = dl.ensureKeyword(toRemove);
+        if (rid > 0) {
+            try {
+                dl.deleteProfessorKeyword(profId, rid);
+                JOptionPane.showMessageDialog(null, "Interest removed from your profile.");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null,
+                        "Delete keyword not implemented in Data Layer.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(null, "Interest was not found.");
+        }
+
     }
 
     // menu for showing interests

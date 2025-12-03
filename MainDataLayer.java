@@ -452,6 +452,20 @@ public class MainDataLayer {
 
         return out;
     }
+    
+    // delete professor_keyword
+    public int deleteProfessorKeyword(int professorID, int keywordID) {
+        int rows = 0;
+        String sql = "DELETE FROM ProfessorKeyword WHERE professorID = ? AND keywordID = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, professorID);
+            ps.setInt(2, keywordID);
+            rows = ps.executeUpdate();
+        } catch (SQLException e) {
+            logError(e, "deleteProfessorKeyword()");
+        }
+        return rows;
+    }
 
     // ---------------------------
     // Student CRUD
