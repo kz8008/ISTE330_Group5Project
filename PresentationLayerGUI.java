@@ -577,12 +577,30 @@ public class PresentationLayerGUI {
             }
         });
 
-        btnRemoveInterest.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                showRemoveInterestsMenu(stuId);
-
-            }
-        });
+        btnRemoveInterest.addActionListener(e -> {
+             String toRemove = JOptionPane.showInputDialog(frame, 
+                 "Enter the interest to remove:");
+         
+             if (toRemove == null || toRemove.trim().isEmpty()) return;
+         
+             int kid = dl.getKeywordID(toRemove.trim());
+         
+             if (kid == -1) {
+                 JOptionPane.showMessageDialog(frame, 
+                     "This keyword does not exist.");
+                 return;
+             }
+         
+             if (!dl.studentHasKeyword(stuId, kid)) {
+                 JOptionPane.showMessageDialog(frame,
+                     "You do not currently have this interest.");
+                 return;
+             }
+         
+             dl.deleteStudentKeyword(stuId, kid);
+             JOptionPane.showMessageDialog(frame, 
+                 "Interest removed successfully.");
+         });   
 
         btnViewInterests.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -884,12 +902,31 @@ public class PresentationLayerGUI {
             }
         });
 
-        btnRemoveInterest.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                showProfRemoveInterestsMenu(profId);
+         btnRemoveInterest.addActionListener(e -> {
+             String toRemove = JOptionPane.showInputDialog(frame, 
+                 "Enter the interest to remove:");
+         
+             if (toRemove == null || toRemove.trim().isEmpty()) return;
+         
+             int kid = dl.getKeywordID(toRemove.trim());
+         
+             if (kid == -1) {
+                 JOptionPane.showMessageDialog(frame, 
+                     "This keyword does not exist.");
+                 return;
+             }
+         
+             if (!dl.professorHasKeyword(profId, kid)) {
+                 JOptionPane.showMessageDialog(frame,
+                     "You do not currently have this interest.");
+                 return;
+             }
+         
+             dl.deleteProfessorKeyword(profId, kid);
+             JOptionPane.showMessageDialog(frame, 
+                 "Interest removed successfully.");
+         });
 
-            }
-        });
 
         btnViewInterests.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
@@ -1175,12 +1212,31 @@ public class PresentationLayerGUI {
             }
         });
 
-        btnModifyInterest.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                showRemovePublicInterestMenu(pubId);
+         btnModifyInterest.addActionListener(e -> {
+             String toRemove = JOptionPane.showInputDialog(frame, 
+                 "Enter the interest to remove:");
+         
+             if (toRemove == null || toRemove.trim().isEmpty()) return;
+         
+             int kid = dl.getKeywordID(toRemove.trim());
+         
+             if (kid == -1) {
+                 JOptionPane.showMessageDialog(frame, 
+                     "This keyword does not exist.");
+                 return;
+             }
+         
+             if (!dl.publicHasKeyword(pubId, kid)) {
+                 JOptionPane.showMessageDialog(frame,
+                     "You do not currently have this interest.");
+                 return;
+             }
+         
+             dl.deletePublicKeyword(pubId, kid);
+             JOptionPane.showMessageDialog(frame, 
+                 "Interest removed successfully.");
+         });
 
-            }
-        });
 
         btnViewInterest.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {

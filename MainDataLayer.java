@@ -341,6 +341,55 @@ public class MainDataLayer {
     // ---------------------------
     // ensureKeyword: finds existing keyword by exact match (case-insensitive) or
     // inserts
+    public int getKeywordID(String term) {
+    String sql = "SELECT keywordID FROM Keyword WHERE term = ?";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setString(1, term);
+        ResultSet rs = ps.executeQuery();
+        if (rs.next()) return rs.getInt("keywordID");
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return -1;  // means keyword does NOT exist
+}
+public boolean studentHasKeyword(int studentID, int keywordID) {
+    String sql = "SELECT * FROM StudentKeyword WHERE studentID=? AND keywordID=?";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, studentID);
+        ps.setInt(2, keywordID);
+        ResultSet rs = ps.executeQuery();
+        return rs.next();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+public boolean professorHasKeyword(int professorID, int keywordID) {
+    String sql = "SELECT * FROM ProfessorKeyword WHERE professorID=? AND keywordID=?";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, professorID);
+        ps.setInt(2, keywordID);
+        ResultSet rs = ps.executeQuery();
+        return rs.next();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
+public boolean publicHasKeyword(int publicID, int keywordID) {
+    String sql = "SELECT * FROM PublicKeyword WHERE publicID=? AND keywordID=?";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.setInt(1, publicID);
+        ps.setInt(2, keywordID);
+        ResultSet rs = ps.executeQuery();
+        return rs.next();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    return false;
+}
+
     public int ensureKeyword(String keyword) {
         if (keyword == null || keyword.isBlank())
             return -1;
